@@ -69,7 +69,7 @@ export default function AddPostPage() {
           return;
       }
 
-      // Submit form
+      // Submit formm
       console.log({ language, category, date, headLine, content, reporter });
       alert("Post saved successfully!");
   };
