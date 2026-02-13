@@ -9,6 +9,12 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { sidebarNav } from "@/config/nav";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
   onLinkClick?: () => void;
@@ -33,11 +39,14 @@ export function SidebarContent({ className, onLinkClick }: SidebarProps) {
                                         {group.title}
                                     </h2>
                                     <div className="space-y-1">
-                                        {group.items.map((item) => {
-                                            const isActive = pathname === item.href;
-                                            return (
+                            {group.items.map((item) => {
+                                const isActive = pathname === item.href;
+                                
+                                if (item.items && item.items.length > 0) {
+                                    return (
+                                        <DropdownMenu key={item.href}>
+                                            <DropdownMenuTrigger asChild>
                                                 <Button
-                                                    key={item.href}
                                                     variant={isActive ? "secondary" : "ghost"}
                                                     className={cn(
                                                         "w-full justify-start h-9 px-4 font-normal transition-all duration-200",
@@ -45,16 +54,45 @@ export function SidebarContent({ className, onLinkClick }: SidebarProps) {
                                                             ? "bg-primary/10 text-primary hover:bg-primary/15 font-medium shadow-sm"
                                                             : "text-muted-foreground hover:text-foreground hover:translate-x-1"
                                                     )}
-                                                    asChild
-                                                    onClick={onLinkClick}
                                                 >
-                                                    <Link href={item.href}>
-                                                        <item.icon className={cn("mr-3 h-4 w-4", isActive ? "text-primary" : "text-muted-foreground")} />
-                                                        {item.title}
-                                                    </Link>
+                                                    <item.icon className={cn("mr-3 h-4 w-4", isActive ? "text-primary" : "text-muted-foreground")} />
+                                                    {item.title}
                                                 </Button>
-                                            );
-                                        })}
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="start" side="right" className="w-48 ml-2">
+                                                {item.items.map((subItem) => (
+                                                    <DropdownMenuItem key={subItem.href} asChild>
+                                                        <Link href={subItem.href} className="cursor-pointer">
+                                                            <subItem.icon className="mr-2 h-4 w-4" />
+                                                            {subItem.title}
+                                                        </Link>
+                                                    </DropdownMenuItem>
+                                                ))}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    );
+                                }
+
+                                return (
+                                    <Button
+                                        key={item.href}
+                                        variant={isActive ? "secondary" : "ghost"}
+                                        className={cn(
+                                            "w-full justify-start h-9 px-4 font-normal transition-all duration-200",
+                                            isActive
+                                                ? "bg-primary/10 text-primary hover:bg-primary/15 font-medium shadow-sm"
+                                                : "text-muted-foreground hover:text-foreground hover:translate-x-1"
+                                        )}
+                                        asChild
+                                        onClick={onLinkClick}
+                                    >
+                                        <Link href={item.href}>
+                                            <item.icon className={cn("mr-3 h-4 w-4", isActive ? "text-primary" : "text-muted-foreground")} />
+                                            {item.title}
+                                        </Link>
+                                    </Button>
+                                );
+                            })}
                                     </div>
                                 </div>
                             ))}

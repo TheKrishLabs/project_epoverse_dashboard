@@ -27,6 +27,7 @@ export type SidebarNavItem = {
   href: string;
   icon: React.ElementType;
   variant: "default" | "ghost";
+  items?: SidebarNavItem[];
 };
 
 export type SidebarNavGroup = {
@@ -51,9 +52,47 @@ export const sidebarNav: SidebarNavGroup[] = [
     items: [
       {
         title: "Post",
-        href: "/post",
+        href: "#",
         icon: FileText,
         variant: "ghost",
+        items: [
+          {
+            title: "Add Post",
+            href: "/post/add",
+            icon: FileText,
+            variant: "ghost",
+          },
+          {
+            title: "Post List",
+            href: "/post/list",
+            icon: FileText,
+            variant: "ghost",
+          },
+          {
+            title: "Bulk Post Upload",
+            href: "/post/bulk-upload",
+            icon: FileText,
+            variant: "ghost",
+          },
+          {
+            title: "Breaking Post",
+            href: "/post/breaking",
+            icon: FileText,
+            variant: "ghost",
+          },
+          {
+            title: "Story Manage",
+            href: "/post/story",
+            icon: FileText,
+            variant: "ghost",
+          },
+          {
+            title: "Post Comments",
+            href: "/post/comments",
+            icon: FileText,
+            variant: "ghost",
+          },
+        ],
       },
       {
         title: "Video Post",
