@@ -82,7 +82,7 @@ export const sidebarNav: SidebarNavGroup[] = [
           },
           {
             title: "Story Manage",
-            href: "/post/story",
+            href: "/story",
             icon: FileText,
             variant: "ghost",
           },
