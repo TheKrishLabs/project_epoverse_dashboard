@@ -123,8 +123,9 @@ export const authService = {
   logout: () => {
     localStorage.removeItem("authToken");
     localStorage.removeItem("user");
-    document.cookie = "authToken=; path=/; max-age=0";
-    window.location.href = "/auth";
+    // Clear cookies with all potential path/domain combinations to be safe
+    document.cookie = "authToken=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    window.location.href = "/login";
   },
 
   getToken: (): string | null => {

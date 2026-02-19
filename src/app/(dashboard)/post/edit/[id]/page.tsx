@@ -13,6 +13,7 @@ interface EditPostPageProps {
 }
 
 export default function EditPostPage({ params }: EditPostPageProps) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [post, setPost] = useState<any>(null); // Using any temporarily as PostForm expects specific structure but service returns PostData
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

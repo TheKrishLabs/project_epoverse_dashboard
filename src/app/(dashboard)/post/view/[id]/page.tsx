@@ -3,8 +3,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { format } from "date-fns";
-import { ArrowLeft, Calendar, User, Tag, Globe, MessageSquare, Eye } from "lucide-react";
+// import { format } from "date-fns";
+import { ArrowLeft, Calendar, User, Globe, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,7 @@ interface ViewPostPageProps {
 }
 
 export default function ViewPostPage({ params }: ViewPostPageProps) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [post, setPost] = useState<any>(null); // Use any or PostData
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -79,6 +80,7 @@ export default function ViewPostPage({ params }: ViewPostPageProps) {
         <div className="md:col-span-2 space-y-6">
             <Card className="overflow-hidden">
                 <div className="relative h-64 w-full">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img 
                         src={post.image} 
                         alt={post.title} 

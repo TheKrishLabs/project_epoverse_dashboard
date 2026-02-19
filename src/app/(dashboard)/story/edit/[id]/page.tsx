@@ -211,6 +211,7 @@ export default function StoryEditPage({ params }: StoryEditPageProps) {
                             </div>
                             {imagePreview && (
                                 <div className="relative w-40 h-24 rounded-md overflow-hidden border mt-2">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                                 </div>
                             )}

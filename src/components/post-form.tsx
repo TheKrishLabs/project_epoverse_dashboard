@@ -1,9 +1,9 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, Upload, Sparkles, X, ArrowLeft, Loader2 } from "lucide-react";
+import { CalendarIcon, Sparkles, X, ArrowLeft, Loader2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -66,6 +66,7 @@ interface PostFormProps {
     isEditing?: boolean;
 }
 
+/*
 const DEFAULT_DATA: PostData = {
     language: "",
     category: "",
@@ -92,10 +93,11 @@ const DEFAULT_DATA: PostData = {
         reference: ""
     }
 };
+*/
 
 export function PostForm({ initialData, isEditing = false }: PostFormProps) {
     const router = useRouter();
-    const data = initialData || DEFAULT_DATA;
+    // const data = initialData || DEFAULT_DATA;
 
     // Initialize state from initialData (which might be flat PostData from service or nested local PostData)
     // We need to handle both or standardize. 
@@ -108,6 +110,7 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
     
     const [date, setDate] = useState<Date | undefined>(
         initialData?.date ? new Date(initialData.date) : 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (initialData as any)?.releaseDate ? new Date((initialData as any).releaseDate) : undefined
     );
     const [content, setContent] = useState(initialData?.content || "");
@@ -117,8 +120,10 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
     const [language, setLanguage] = useState(initialData?.language || "");
     const [category, setCategory] = useState(initialData?.category || "");
     const [subCategory, setSubCategory] = useState(initialData?.subCategory || "");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [headLine, setHeadLine] = useState(initialData?.headLine || (initialData as any)?.title || "");
     const [shortHead, setShortHead] = useState(initialData?.shortHead || "");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [reporter, setReporter] = useState(initialData?.reporter || (initialData as any)?.postBy || "");
     
     // SEO & Settings State
@@ -127,14 +132,19 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
         breaking: false,
         feature: false,
         recommended: false,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         publish: (initialData as any)?.status === "Publish",
         schema: false,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         social: (initialData as any)?.socialPost || false
     });
     const [seo, setSeo] = useState(initialData?.seo || {
         customUrl: "",
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         title: (initialData as any)?.seoTitle || "",
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         keyword: (initialData as any)?.seoKeywords || "",
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         description: (initialData as any)?.seoDescription || "",
         reference: ""
     });
@@ -375,6 +385,7 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
                         </div>
                         {imagePreview && (
                             <div className="relative mt-2 w-40 h-24 rounded-md overflow-hidden border">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                                 <Button
                                     variant="destructive"

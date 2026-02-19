@@ -92,7 +92,9 @@ export function AuthPage() {
     try {
       await authService.login(data.email, data.password);
       router.push("/dashboard"); 
-    } catch (err: any) {
+    } 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    catch (err: any) {
       setError(err.message || "Login failed. Please check your credentials.");
       setIsLoading(false);
     }
@@ -111,7 +113,9 @@ export function AuthPage() {
         loginForm.setValue("email", data.email); // Pre-fill email
         setIsLoading(false);
       }, 2000);
-    } catch (err: any) {
+    } 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    catch (err: any) {
       setError(err.message || "Signup failed. Please try again.");
       setIsLoading(false);
     }

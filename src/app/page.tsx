@@ -38,7 +38,7 @@ export default function HomePage() {
 
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-muted-foreground bg-clip-text text-transparent">
-            Namaste, Welcome to Epoverse
+            Welcome to Epoverse
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-md mx-auto">
             Your centralized dashboard for content, analytics, and community growth.
