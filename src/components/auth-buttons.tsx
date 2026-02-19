@@ -38,7 +38,7 @@ export function AuthButtons() {
     if (!user) {
         return (
             <Link href="/login">
-                <Button>Login / Sign Up</Button>
+                <Button>Login</Button>
             </Link>
         );
     }
