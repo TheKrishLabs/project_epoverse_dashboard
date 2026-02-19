@@ -2,9 +2,9 @@
 import { NextResponse } from 'next/server';
 import { POSTS } from '@/lib/mock-db';
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   await new Promise(resolve => setTimeout(resolve, 800));
-  const id = params.id;
+  const { id } = await params;
   const post = POSTS.find(p => p.id === id);
   
   if (!post) {
@@ -14,9 +14,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
   return NextResponse.json(post);
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   await new Promise(resolve => setTimeout(resolve, 800));
-  const id = params.id;
+  const { id } = await params;
   const body = await request.json();
   const index = POSTS.findIndex(p => p.id === id);
   
@@ -28,9 +28,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   return NextResponse.json(POSTS[index]);
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   await new Promise(resolve => setTimeout(resolve, 800));
-  const id = params.id;
+  const { id } = await params;
   const index = POSTS.findIndex(p => p.id === id);
   
   if (index !== -1) {

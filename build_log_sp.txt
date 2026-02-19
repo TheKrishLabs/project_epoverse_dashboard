@@ -1,0 +1,29 @@
+
+> epoverse@0.1.0 build
+> next build --turbopack
+
+   ▲ Next.js 15.5.12 (Turbopack)
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Finished writing to disk in 195ms
+ ✓ Compiled successfully in 12.1s
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/35) ...
+   Generating static pages (8/35) 
+   Generating static pages (17/35) 
+ ⨯ useSearchParams() should be wrapped in a suspense boundary at page "/login". Read more: https://nextjs.org/docs/messages/missing-suspense-with-csr-bailout
+    at g (C:\Users\orang\OneDrive\Desktop\krishLab nn\project_epoverse_dashboard\.next\server\chunks\ssr\node_modules_e7959212._.js:4:5016)
+    at m (C:\Users\orang\OneDrive\Desktop\krishLab nn\project_epoverse_dashboard\.next\server\chunks\ssr\node_modules_e7959212._.js:4:6650)
+    at gE (C:\Users\orang\OneDrive\Desktop\krishLab nn\project_epoverse_dashboard\.next\server\chunks\ssr\src_components_auth_AuthPage_tsx_70b28c16._.js:37:32225)
+    at n3 (C:\Users\orang\OneDrive\Desktop\krishLab nn\project_epoverse_dashboard\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:82831)
+    at n6 (C:\Users\orang\OneDrive\Desktop\krishLab nn\project_epoverse_dashboard\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:84601)
+    at n6 (C:\Users\orang\OneDrive\Desktop\krishLab nn\project_epoverse_dashboard\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:101560)
+    at n5 (C:\Users\orang\OneDrive\Desktop\krishLab nn\project_epoverse_dashboard\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:104801)
+    at n7 (C:\Users\orang\OneDrive\Desktop\krishLab nn\project_epoverse_dashboard\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:102219)
+    at ia (C:\Users\orang\OneDrive\Desktop\krishLab nn\project_epoverse_dashboard\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:108211)
+    at n6 (C:\Users\orang\OneDrive\Desktop\krishLab nn\project_epoverse_dashboard\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:97035)
+Error occurred prerendering page "/login". Read more: https://nextjs.org/docs/messages/prerender-error
+Export encountered an error on /(auth)/login/page: /login, exiting the build.
+ ⨯ Next.js build worker exited with code: 1 and signal: null

@@ -14,7 +14,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ChevronLeft, ChevronRight, FileSpreadsheet, FileText, Filter } from "lucide-react"
+import { ChevronLeft, ChevronRight, FileSpreadsheet, FileText } from "lucide-react"
 
 import {
   Table,

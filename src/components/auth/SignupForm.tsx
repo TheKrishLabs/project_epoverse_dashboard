@@ -54,7 +54,9 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
       } else {
          router.push("/dashboard");
       }
-    } catch (err: any) {
+    } 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    catch (err: any) {
       setError(err.message || "Signup failed. Please try again.");
     } finally {
       setIsLoading(false);

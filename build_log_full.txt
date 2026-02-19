@@ -1,0 +1,30 @@
+
+> epoverse@0.1.0 build
+> next build --turbopack
+
+   ▲ Next.js 15.5.12 (Turbopack)
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Finished writing to disk in 197ms
+ ✓ Compiled successfully in 14.2s
+   Linting and checking validity of types ...
+Failed to compile.
+
+.next/types/validator.ts:342:31
+Type error: Type 'typeof import("C:/Users/orang/OneDrive/Desktop/krishLab nn/project_epoverse_dashboard/src/app/api/posts/[id]/route")' does not satisfy the constraint 'RouteHandlerConfig<"/api/posts/[id]">'.
+  Types of property 'GET' are incompatible.
+    Type '(request: Request, { params }: { params: { id: string; }; }) => Promise<NextResponse<PostData> | NextResponse<{ error: string; }>>' is not assignable to type '(request: NextRequest, context: { params: Promise<{ id: string; }>; }) => void | Response | Promise<void | Response>'.
+      Types of parameters '__1' and 'context' are incompatible.
+        Type '{ params: Promise<{ id: string; }>; }' is not assignable to type '{ params: { id: string; }; }'.
+          Types of property 'params' are incompatible.
+            Property 'id' is missing in type 'Promise<{ id: string; }>' but required in type '{ id: string; }'.
+
+[0m [90m 340 |[39m   type __IsExpected[33m<[39m[33mSpecific[39m [36mextends[39m [33mRouteHandlerConfig[39m[33m<[39m[32m"/api/posts/[id]"[39m[33m>>[39m [33m=[39m [33mSpecific[39m
+ [90m 341 |[39m   [36mconst[39m handler [33m=[39m {} [36mas[39m [36mtypeof[39m [36mimport[39m([32m"../../src/app/api/posts/[id]/route.js"[39m)
+[31m[1m>[22m[39m[90m 342 |[39m   type __Check [33m=[39m __IsExpected[33m<[39m[36mtypeof[39m handler[33m>[39m
+ [90m     |[39m                               [31m[1m^[22m[39m
+ [90m 343 |[39m   [90m// @ts-ignore[39m
+ [90m 344 |[39m   type __Unused [33m=[39m __Check
+ [90m 345 |[39m }[0m
+Next.js build worker exited with code: 1 and signal: null
