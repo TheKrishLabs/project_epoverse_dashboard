@@ -96,21 +96,63 @@ export const sidebarNav: SidebarNavGroup[] = [
       },
       {
         title: "Video Post",
-        href: "/video-post",
+        href: "#",
         icon: Video,
         variant: "ghost",
+        items: [
+          {
+            title: "Add Video Post",
+            href: "/video-post/add",
+            icon: Video,
+            variant: "ghost",
+          },
+          {
+            title: "Video Post List",
+            href: "/video-post/list",
+            icon: Video,
+            variant: "ghost",
+          }
+        ]
       },
       {
         title: "Page",
-        href: "/page-builder",
+        href: "#",
         icon: Layout,
         variant: "ghost",
+        items: [
+          {
+            title: "Add New Page",
+            href: "/page-builder/add",
+            icon: Layout,
+            variant: "ghost",
+          },
+          {
+            title: "Page List",
+            href: "/page-builder/list",
+            icon: Layout,
+            variant: "ghost",
+          }
+        ]
       },
       {
         title: "Media Library",
-        href: "/media-library",
+        href: "#", // Use # or a parent route if using submenu
         icon: ImageIcon,
         variant: "ghost",
+        items: [
+          {
+            title: "Photo Upload",
+            href: "/media-library/upload",
+            icon: ImageIcon,
+            variant: "ghost",
+          },
+          {
+            title: "Photo List",
+            href: "/media-library/list",
+            icon: ImageIcon,
+            variant: "ghost",
+          }
+        ]
       },
       {
         title: "Categories",
@@ -221,6 +263,26 @@ export const sidebarNav: SidebarNavGroup[] = [
         href: "/settings",
         icon: Settings,
         variant: "ghost",
+      },
+      {
+        title: "User Management",
+        href: "#",
+        icon: Users,
+        variant: "ghost",
+        items: [
+          {
+            title: "User List",
+            href: "/settings/users",
+            icon: Users,
+            variant: "ghost",
+          },
+          {
+            title: "Role List",
+            href: "/settings/roles",
+            icon: FileText,
+            variant: "ghost",
+          },
+        ]
       },
       {
         title: "Update guides",

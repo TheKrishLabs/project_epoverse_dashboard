@@ -1,50 +1,83 @@
+import api from "@/lib/axios";
 import { PostData } from "@/lib/mock-db";
 
 export type { PostData };
 
+export interface Language {
+    _id: string;
+    name: string;
+    isDeleted?: boolean;
+    createdAt?: string;
+    updatedAt?: string;
+    __v?: number;
+}
+
+export interface Category {
+    _id: string;
+    name: string;
+    slug?: string;
+    status?: string;
+}
+
 export const postService = {
+  getLanguages: async (): Promise<Language[]> => {
+      try {
+        console.log("Fetching languages from /language/fetch-all");
+        const response = await api.get<Language[]>('/language/fetch-all');
+        console.log("Raw API Response:", response);
+        return response || [];
+      } catch (error) {
+        console.error("Failed to fetch languages", error);
+        throw error;
+      }
+  },
+
+  getCategories: async (): Promise<Category[]> => {
+      try {
+        console.log("Fetching categories from /categories/fetch-all");
+        const response = await api.get<Category[]>('/categories/fetch-all');
+        console.log("Raw Categories Response:", response);
+        return response || [];
+      } catch (error) {
+        console.error("Failed to fetch categories", error);
+        throw error;
+      }
+  },
+
   getPosts: async (): Promise<PostData[]> => {
-    const response = await fetch('/api/posts');
-    if (!response.ok) throw new Error('Failed to fetch posts');
-    return response.json();
+    return api.get<PostData[]>('/posts');
   },
 
   getPostById: async (id: string): Promise<PostData | undefined> => {
-    const response = await fetch(`/api/posts/${id}`);
-    if (!response.ok) {
-        if (response.status === 404) return undefined;
-        throw new Error('Failed to fetch post');
+    try {
+        return await api.get<PostData>(`/posts/${id}`);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+        if (error.response && error.response.status === 404) {
+            return undefined;
+        }
+        throw error;
     }
-    return response.json();
   },
 
   createPost: async (post: Omit<PostData, "id" | "hit" | "likes" | "comments" | "releaseDate" | "postDate" | "postBy" | "status" | "socialPost">): Promise<PostData> => {
-    const response = await fetch('/api/posts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(post),
-    });
-    if (!response.ok) throw new Error('Failed to create post');
-    return response.json();
+    return api.post<PostData>('/posts', post);
   },
 
   updatePost: async (id: string, updates: Partial<PostData>): Promise<PostData | null> => {
-    const response = await fetch(`/api/posts/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updates),
-    });
-    if (!response.ok) {
-        if (response.status === 404) return null;
-        throw new Error('Failed to update post');
+    try {
+        return await api.put<PostData>(`/posts/${id}`, updates);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+         if (error.response && error.response.status === 404) {
+            return null;
+        }
+        throw error;
     }
-    return response.json();
   },
 
   deletePost: async (id: string): Promise<boolean> => {
-    const response = await fetch(`/api/posts/${id}`, {
-      method: 'DELETE',
-    });
-    return response.ok;
+    await api.delete(`/posts/${id}`);
+    return true;
   }
 };

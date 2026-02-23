@@ -25,9 +25,8 @@ export interface AuthResponse {
   confirmPassword?: string;
 }
 
-// Use local proxy path to avoid CORS issues and socket hang ups
-// The proxy is now handled by src/app/api/proxy/[...path]/route.ts
-const API_URL = "/api/proxy/auth";
+// Use Next.js rewrites (configured in next.config.ts) to avoid CORS issues
+const API_URL = "/api/auth";
 
 export const authService = {
   login: async (email: string, password: string): Promise<AuthResponse> => {

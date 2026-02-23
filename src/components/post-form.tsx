@@ -1,12 +1,13 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { CalendarIcon, Sparkles, X, ArrowLeft, Loader2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { postService, Language, Category } from "@/services/post-service";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -108,6 +109,50 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
     // Actually, let's look at how we use it. 
     // If we passed PostData from service, we need to map it back to form state.
     
+    const [languages, setLanguages] = useState<Language[]>([]);
+    const [isLoadingLanguages, setIsLoadingLanguages] = useState(true);
+    const [isLanguageError, setIsLanguageError] = useState(false);
+
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+    const [isCategoryError, setIsCategoryError] = useState(false);
+    
+    // Fetch initial data
+    useEffect(() => {
+        const fetchData = async () => {
+            setIsLoadingLanguages(true);
+            setIsLanguageError(false);
+            setIsLoadingCategories(true);
+            setIsCategoryError(false);
+
+            try {
+                const [langData, catData] = await Promise.all([
+                    postService.getLanguages(),
+                    postService.getCategories()
+                ]);
+                console.log("Languages:", langData);
+                setLanguages(langData);
+                console.log("Categories:", catData);
+                setCategories(catData);
+            } catch (error) {
+                console.error("Failed to load initial data", error);
+                // We might want to handle errors individually, but for now this catches if *any* fails. 
+                // To handle individually, we'd wrap api calls or check which failed. 
+                // Simple approach: set both errors if one fails, or refine logic.
+                // Let's refine logic slightly to allow one to succeed if the other fails?
+                // Promise.all rejects if any rejects.
+                // For robust UI, better to use allSettled or catch individually.
+                // Reverting to individual blocks or just setting error generic.
+                setIsLanguageError(true); 
+                setIsCategoryError(true);
+            } finally {
+                setIsLoadingLanguages(false);
+                setIsLoadingCategories(false);
+            }
+        };
+        fetchData();
+    }, []);
+
     const [date, setDate] = useState<Date | undefined>(
         initialData?.date ? new Date(initialData.date) : 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -250,10 +295,20 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
                 <SelectTrigger className={cn(errors.language && "border-red-500")}>
                     <SelectValue placeholder="Select Language" />
                 </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="es">Spanish</SelectItem>
-                    <SelectItem value="fr">French</SelectItem>
+                 <SelectContent>
+                    {isLoadingLanguages ? (
+                        <SelectItem value="loading" disabled>Loading languages...</SelectItem>
+                    ) : isLanguageError ? (
+                        <SelectItem value="error" disabled>Failed to load languages</SelectItem>
+                    ) : languages.length > 0 ? (
+                        languages.map((lang) => (
+                            <SelectItem key={lang._id} value={lang.name}>
+                                {lang.name}
+                            </SelectItem>
+                        ))
+                    ) : (
+                        <SelectItem value="empty" disabled>No languages available</SelectItem>
+                    )}
                 </SelectContent>
                 </Select>
                 {errors.language && <span className="text-xs text-red-500">Required</span>}
@@ -265,9 +320,19 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
                     <SelectValue placeholder="Select Category" />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="tech">Technology</SelectItem>
-                    <SelectItem value="life">Lifestyle</SelectItem>
-                    <SelectItem value="news">News</SelectItem>
+                    {isLoadingCategories ? (
+                        <SelectItem value="loading" disabled>Loading categories...</SelectItem>
+                    ) : isCategoryError ? (
+                        <SelectItem value="error" disabled>Failed to load categories</SelectItem>
+                    ) : categories.length > 0 ? (
+                        categories.map((cat) => (
+                            <SelectItem key={cat._id} value={cat.name}>
+                                {cat.name}
+                            </SelectItem>
+                        ))
+                    ) : (
+                        <SelectItem value="empty" disabled>No categories available</SelectItem>
+                    )}
                 </SelectContent>
                 </Select>
                 {errors.category && <span className="text-xs text-red-500">Required</span>}
