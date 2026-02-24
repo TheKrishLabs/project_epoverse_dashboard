@@ -24,6 +24,12 @@ axiosInstance.interceptors.request.use(
     // but localStorage is common for client-side)
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('authToken');
+      if (token) {
+        console.log(`[Axios] Found token in localStorage (Preview: ${token.substring(0, 10)}...). Attaching to: ${config.url}`);
+      } else {
+        console.warn(`[Axios] NO token found in localStorage for: ${config.url}`);
+      }
+      
       if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
       }
