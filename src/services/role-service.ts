@@ -9,6 +9,7 @@ export interface Role {
   updatedAt?: string;
 }
 
+// Optional interface if some endpoints return a wrapper, though currently it seems they don't
 export interface RoleResponse {
   success: boolean;
   message?: string;
@@ -26,8 +27,10 @@ export const roleService = {
    */
   getRoles: async (): Promise<Role[]> => {
     try {
-      const response = await api.get<RoleResponse>(`${BASE_URL}/fetch-all`);
-      return response.data;
+      // Handle array or wrapped object gracefully so .map() never breaks in UI
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const response = await api.get<any>(`${BASE_URL}/fetch-all`);
+      return Array.isArray(response) ? response : (response?.data || response?.roles || []);
     } catch (error) {
       console.error('Error fetching roles:', error);
       throw error;
@@ -39,9 +42,10 @@ export const roleService = {
    */
   getRoleById: async (id: string): Promise<Role> => {
     try {
-      const response = await api.get<RoleResponse>(`${BASE_URL}/${id}`);
-      if (response.role) return response.role;
-      return response.data as unknown as Role;
+      // The backend likely returns the role object directly. Support wrapper fallback just in case.
+      const response = await api.get<Role | RoleResponse>(`${BASE_URL}/${id}`);
+      if ('role' in response && response.role) return response.role;
+      return response as Role;
     } catch (error) {
       console.error(`Error fetching role ${id}:`, error);
       throw error;
@@ -51,9 +55,9 @@ export const roleService = {
   /**
    * Create a new role
    */
-  createRole: async (data: { name: string; permissions?: Record<string, string[]> }): Promise<RoleResponse> => {
+  createRole: async (data: { name: string; permissions?: Record<string, string[]> }): Promise<Role> => {
     try {
-      const response = await api.post<RoleResponse>(`${BASE_URL}/add`, data);
+      const response = await api.post<Role>(`${BASE_URL}/add`, data);
       return response;
     } catch (error) {
       console.error('Error creating role:', error);
@@ -64,9 +68,9 @@ export const roleService = {
   /**
    * Update an existing role
    */
-  updateRole: async (id: string, data: { name: string; permissions?: Record<string, string[]> }): Promise<RoleResponse> => {
+  updateRole: async (id: string, data: { name: string; permissions?: Record<string, string[]> }): Promise<Role> => {
     try {
-      const response = await api.put<RoleResponse>(`${BASE_URL}/${id}`, data);
+      const response = await api.put<Role>(`/role-and-permission/${id}/update`, data);
       return response;
     } catch (error) {
       console.error(`Error updating role ${id}:`, error);
@@ -77,9 +81,9 @@ export const roleService = {
   /**
    * Delete a role
    */
-  deleteRole: async (id: string): Promise<RoleResponse> => {
+  deleteRole: async (id: string): Promise<Record<string, unknown>> => {
     try {
-      const response = await api.delete<RoleResponse>(`${BASE_URL}/${id}`);
+      const response = await api.delete<Record<string, unknown>>(`${BASE_URL}/${id}`);
       return response;
     } catch (error) {
       console.error(`Error deleting role ${id}:`, error);

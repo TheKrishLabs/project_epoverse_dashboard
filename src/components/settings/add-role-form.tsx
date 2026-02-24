@@ -183,7 +183,7 @@ export function AddRoleForm({ roleId }: { roleId?: string }) {
     } catch (err: unknown) {
       setError(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (err as any)?.customMessage || (err as any)?.message || "Failed to create role. Please try again."
+        (err as any)?.customMessage || (err as any)?.message || `Failed to ${roleId ? 'update' : 'create'} role. Please try again.`
       );
     } finally {
       setIsLoading(false);

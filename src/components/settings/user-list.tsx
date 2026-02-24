@@ -77,14 +77,21 @@ export function UserList() {
   }
 
   const handleFormSubmit = async (formData: FormData) => {
-    if (selectedUser) {
-      // Update
-      await userService.updateUser(selectedUser._id, formData)
-    } else {
-      // Create
-      await userService.createUser(formData)
+    try {
+      if (selectedUser) {
+        // Update
+        await userService.updateUser(selectedUser._id, formData)
+      } else {
+        // Create
+        await userService.createUser(formData)
+      }
+      await fetchData() // Refresh list
+    } catch (err: unknown) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const msg = (err as any)?.customMessage || (err as any)?.message || "Failed to save user.";
+      setError(msg);
+      throw err; // Re-throw so the dialog knows it failed and doesn't close
     }
-    await fetchData() // Refresh list
   }
 
   const confirmDelete = async () => {
@@ -189,8 +196,15 @@ export function UserList() {
         },
         cell: ({ row }) => {
            const role = row.original.role
-           const roleName = typeof role === 'string' ? role : (role?.name || 'User')
-           return <Badge className="bg-[#198754] hover:bg-[#157347] font-semibold text-[11px] px-2.5 py-0.5 rounded-full">{roleName}</Badge>
+           let roleName = 'User';
+           if (typeof role === 'string') {
+               const foundRole = roles.find((r) => r._id === role);
+               roleName = foundRole ? foundRole.name : role; // fallback to ID if not found
+           } else {
+               roleName = role?.name || 'User';
+           }
+
+           return <Badge className="bg-[#198754] flex w-fit justify-center mx-auto hover:bg-[#157347] font-semibold text-[11px] px-2.5 py-0.5 rounded-full">{roleName}</Badge>
         },
       },
       {
@@ -312,7 +326,7 @@ export function UserList() {
         },
       },
     ],
-    []
+    [roles]
   )
 
   return (

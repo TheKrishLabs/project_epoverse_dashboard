@@ -29,11 +29,7 @@ export interface GetPhotosResponse {
 export const mediaService = {
   uploadPhoto: async (formData: FormData): Promise<UploadPhotoResponse> => {
     try {
-      const response = await api.post<UploadPhotoResponse>('/media/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const response = await api.post<UploadPhotoResponse>('/media/upload', formData);
       return response;
     } catch (error) {
       console.error("Media upload failed", error);

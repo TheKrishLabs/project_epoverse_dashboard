@@ -116,8 +116,10 @@ export function UserFormDialog({
 
       await onSubmit(formData)
       onOpenChange(false)
-    } catch (error) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
       console.error(error)
+      form.setError("root", { message: error?.customMessage || error?.message || "An unexpected error occurred." })
     } finally {
       setIsLoading(false)
     }
@@ -136,6 +138,11 @@ export function UserFormDialog({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 pt-4">
+            {form.formState.errors.root && (
+               <div className="p-3 bg-red-50 text-red-600 font-medium rounded-md text-sm border border-red-200">
+                  {form.formState.errors.root.message}
+               </div>
+            )}
             
             <div className="grid grid-cols-2 gap-4">
                <FormField

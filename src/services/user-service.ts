@@ -1,3 +1,5 @@
+import api from '@/lib/axios';
+
 export interface User {
   _id: string;
   fullName: string;
@@ -49,25 +51,18 @@ export const userService = {
    * Create a new user (multipart/form-data for image)
    */
   createUser: async (formData: FormData): Promise<UserResponse> => {
-    return new Promise((resolve) => setTimeout(() => {
-      const newUser: User = {
-        _id: Date.now().toString(),
-        fullName: (formData.get('fullName') as string) || 'New User',
-        email: (formData.get('email') as string) || '',
-        mobile: (formData.get('mobile') as string) || '',
-        role: (formData.get('role') as string) || 'User',
-        status: (formData.get('status') as 'Active' | 'Inactive') || 'Active',
-        createdAt: new Date().toISOString(),
-      };
-      
-      const imageFile = formData.get('image');
-      if (imageFile instanceof File) {
-         newUser.image = URL.createObjectURL(imageFile); // Mock image URL for preview
+    try {
+      console.log('--- Submitting User FormData ---');
+      for (const pair of formData.entries()) {
+        console.log(`${pair[0]}: ${pair[1]}`);
       }
-
-      mockUsers.unshift(newUser);
-      resolve({ success: true, message: 'User created successfully', data: mockUsers, user: newUser });
-    }, 800));
+      
+      const response = await api.post<UserResponse>('/users/add', formData);
+      return response;
+    } catch (error) {
+      console.error('Error creating user:', error);
+      throw error;
+    }
   },
 
   /**
