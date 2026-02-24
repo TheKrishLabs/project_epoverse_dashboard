@@ -28,6 +28,12 @@ axiosInstance.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
     }
+    
+    // Let browser automatically set Content-Type with boundary for FormData
+    if (config.data instanceof FormData && config.headers) {
+      delete config.headers['Content-Type'];
+    }
+    
     return config;
   },
   (error: AxiosError) => {
@@ -57,7 +63,10 @@ axiosInstance.interceptors.response.use(
                  localStorage.removeItem('user');
                  // Optional: Clear cookies logic here if needed
                  document.cookie = "authToken=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-                 window.location.href = '/login';
+                 // We intentionally do NOT use window.location.href = '/login' here to prevent abrupt
+                 // unmounting of pages or losing user form progress.
+                 // The UI (e.g. Next.js middleware or Auth guards) should gracefully react to the missing token.
+                 console.warn("Session expired or invalid token. Please log in again.");
             }
         }
       }

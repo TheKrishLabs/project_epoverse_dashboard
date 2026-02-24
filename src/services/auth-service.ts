@@ -1,3 +1,4 @@
+import api from '@/lib/axios';
 
 // Update interface to match user's expected response structure
 // { "fullName":..., "email":..., "password":..., "confirmPassword":... }
@@ -16,6 +17,7 @@ export interface AuthResponse {
   // We will support both: token in root, or token implied/not present.
   message?: string;
   token?: string;
+  accessToken?: string;
   user?: User;
   
   // Specific fields from user example
@@ -25,35 +27,21 @@ export interface AuthResponse {
   confirmPassword?: string;
 }
 
-// Use local proxy path to avoid CORS issues and socket hang ups
-// The proxy is now handled by src/app/api/proxy/[...path]/route.ts
-const API_URL = "/api/proxy/auth";
+// Use Next.js rewrites (configured in next.config.ts) to avoid CORS issues
+const API_URL = "/auth";
 
 export const authService = {
   login: async (email: string, password: string): Promise<AuthResponse> => {
     try {
       console.log(`Attempting login to: ${API_URL}/login`);
-      const response = await fetch(`${API_URL}/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      console.log("Response Status:", response.status);
-      const data = await response.json();
+      const data = await api.post<AuthResponse>(`${API_URL}/login`, { email, password });
       console.log("Response Data:", data);
-
-      if (!response.ok) {
-        throw new Error(data.message || `Login failed with status: ${response.status}`);
-      }
 
       // Handle the token storage.
       // If the API returns a 'token' field, we store it.
       // If NOT, we might need to assume the user IS authenticated if we got a 200 OK and user data.
       
-      const tokenToStore = data.token;
+      const tokenToStore = data.accessToken || data.token;
       
       // If no token but we have user data, we might generate a dummy one or check headers?
       // For now, let's assume if data.email exists, it's a success.
@@ -71,10 +59,11 @@ export const authService = {
 
       // Store User Data
       // Map 'fullName' to 'name' for compatibility
-      const userData = data.user || data;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const userData = (data.user || data) as Record<string, any>;
       const userToStore: User = {
-          email: userData.email,
-          name: userData.fullName || userData.name || userData.email?.split('@')[0],
+          email: userData.email || '',
+          name: userData.fullName || userData.name || userData.email?.split('@')[0] || 'User',
           fullName: userData.fullName,
           // Merge other fields if needed
           ...userData
@@ -85,7 +74,8 @@ export const authService = {
       return data;
     } catch (error: unknown) {
       console.error("Login Service Error Detailed:", error);
-      const errorMessage = error instanceof Error ? error.message : "Network error. Please try again later.";
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const errorMessage = (error as any)?.customMessage || (error as any)?.message || "Network error. Please try again later.";
       throw new Error(errorMessage);
     }
   },
@@ -96,26 +86,14 @@ export const authService = {
       const payload: { fullName: string; email: string; password: string; confirmPassword?: string } = { fullName, email, password };
       if (confirmPassword) payload.confirmPassword = confirmPassword;
 
-      const response = await fetch(`${API_URL}/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      console.log("Signup Response Status:", response.status);
-      const data = await response.json();
+      const data = await api.post<AuthResponse>(`${API_URL}/register`, payload);
       console.log("Signup Response Data:", data);
-
-      if (!response.ok) {
-        throw new Error(data.message || `Signup failed with status: ${response.status}`);
-      }
 
       return data;
     } catch (error: unknown) {
       console.error("Signup Service Error Detailed:", error);
-      const errorMessage = error instanceof Error ? error.message : "Network error. Please try again later.";
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const errorMessage = (error as any)?.customMessage || (error as any)?.message || "Network error. Please try again later.";
       throw new Error(errorMessage);
     }
   },
