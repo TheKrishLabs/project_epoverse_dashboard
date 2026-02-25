@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Trash2, Copy } from "lucide-react";
+import { Trash2, Copy, Eye, Loader2, RefreshCcw } from "lucide-react";
 import { format } from "date-fns";
 
 import { mediaService, Photo } from "@/services/media-service";
@@ -27,7 +27,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Loader2, RefreshCcw } from "lucide-react";
 
 export function PhotoList() {
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -151,24 +150,24 @@ export function PhotoList() {
           const isDeleted = photo.status === 'Deleted';
           return (
           <Card key={photo._id} className="overflow-hidden group relative">
-            <div 
-                className={`relative aspect-video bg-muted cursor-pointer transition-opacity ${isDeleted ? 'opacity-50 grayscale' : ''}`}
-                onClick={() => handleViewDetails(photo._id)}
-            >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img 
-                src={photo.thumbnailUrl || photo.url} 
-                alt={photo.caption || "Photo"} 
-                className="object-cover w-full h-full transition-transform group-hover:scale-105"
-              />
-              {isDeleted && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <span className="bg-red-500/90 text-white px-3 py-1 font-bold tracking-widest text-sm rounded shadow-lg border border-red-700">
-                          DELETED
-                      </span>
-                  </div>
-              )}
-            </div>
+             <div 
+                 className={`relative aspect-video bg-muted overflow-hidden transition-opacity ${isDeleted ? 'opacity-50 grayscale' : ''}`}
+             >
+                 {/* eslint-disable-next-line @next/next/no-img-element */}
+               <img 
+                 src={photo.thumbnailUrl || photo.url} 
+                 alt={photo.caption || "Photo"} 
+                 className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+               />
+
+               {isDeleted && (
+                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                       <span className="bg-red-500/90 text-white px-3 py-1 font-bold tracking-widest text-sm rounded shadow-lg border border-red-700">
+                           DELETED
+                       </span>
+                   </div>
+               )}
+             </div>
             <CardContent className="p-4 space-y-2">
                {photo.caption && <p className="font-medium truncate" title={photo.caption}>{photo.caption}</p>}
                <p className="text-xs text-muted-foreground truncate" title={photo.url}>{photo.url}</p>
@@ -181,15 +180,31 @@ export function PhotoList() {
                    </span>
                </div>
             </CardContent>
-            <CardFooter className="p-4 pt-0 flex justify-between">
-                <Button variant="outline" size="sm" onClick={() => copyToClipboard(photo.url)}>
-                    <Copy className="h-3 w-3 mr-2" />
-                    Copy URL
-                </Button>
+            <CardFooter className="p-4 pt-0 flex justify-between items-center bg-gray-50/50">
+                <div className="flex items-center gap-1">
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        onClick={() => handleViewDetails(photo._id)}
+                        title="Preview Image"
+                    >
+                        <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                        onClick={() => copyToClipboard(photo.url)}
+                        title="Copy URL"
+                    >
+                        <Copy className="h-4 w-4" />
+                    </Button>
+                </div>
                 <Button 
                     variant="ghost" 
-                    size="sm" 
-                    className={isDeleted ? "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" : "text-destructive hover:text-destructive hover:bg-destructive/10"} 
+                    size="icon" 
+                    className={`h-8 w-8 ${isDeleted ? "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" : "text-destructive hover:text-destructive hover:bg-destructive/10"}`} 
                     onClick={() => setPhotoToToggle(photo)}
                     title={isDeleted ? "Restore Photo" : "Soft Delete Photo"}
                 >
