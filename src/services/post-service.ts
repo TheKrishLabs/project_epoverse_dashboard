@@ -3,14 +3,6 @@ import { PostData } from "@/lib/mock-db";
 
 export type { PostData };
 
-export interface Language {
-    _id: string;
-    name: string;
-    isDeleted?: boolean;
-    createdAt?: string;
-    updatedAt?: string;
-    __v?: number;
-}
 
 export interface Category {
     _id: string;
@@ -19,23 +11,28 @@ export interface Category {
     status?: string;
 }
 
-export const postService = {
-  getLanguages: async (): Promise<Language[]> => {
-      try {
-        console.log("Fetching languages from /language/fetch-all");
-        const response = await api.get<Language[]>('/language/fetch-all');
-        console.log("Raw API Response:", response);
-        return response || [];
-      } catch (error) {
-        console.error("Failed to fetch languages", error);
-        throw error;
-      }
-  },
+export interface Article {
+    _id: string;
+    title?: string;
+    headline?: string;
+    content: string;
+    // They could be returned as nested populated objects or just ID strings
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    category?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    language?: any;
+    featuredImage?: string;
+    image?: string;
+    status?: string;
+    createdAt?: string;
+    updatedAt?: string;
+}
 
+export const postService = {
   getCategories: async (): Promise<Category[]> => {
       try {
-        console.log("Fetching categories from /categories/fetch-all");
-        const response = await api.get<Category[]>('/categories/fetch-all');
+        console.log("Fetching categories from /categories");
+        const response = await api.get<Category[]>('/categories');
         console.log("Raw Categories Response:", response);
         return response || [];
       } catch (error) {
@@ -46,6 +43,20 @@ export const postService = {
 
   getPosts: async (): Promise<PostData[]> => {
     return api.get<PostData[]>('/posts');
+  },
+
+  getArticles: async (): Promise<Article[]> => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const response: any = await api.get('/articles');
+        if (Array.isArray(response)) return response;
+        if (response && Array.isArray(response.data)) return response.data;
+        if (response && Array.isArray(response.articles)) return response.articles;
+        return [];
+      } catch (error) {
+        console.error("Failed to fetch articles", error);
+        throw error;
+      }
   },
 
   getPostById: async (id: string): Promise<PostData | undefined> => {
@@ -60,8 +71,31 @@ export const postService = {
     }
   },
 
-  createPost: async (post: Omit<PostData, "id" | "hit" | "likes" | "comments" | "releaseDate" | "postDate" | "postBy" | "status" | "socialPost">): Promise<PostData> => {
-    return api.post<PostData>('/posts', post);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  createPost: async (post: any): Promise<any> => {
+    // Legacy support or fallback depending on how Dashboard handles it
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return api.post<any>('/posts', post);
+  },
+
+  createArticle: async (payload: {
+    headline: string;
+    content: string;
+    slug: string;
+    category: string;
+    language: string;
+    image: string;
+    status: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  }): Promise<any> => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const response = await api.post<any>('/articles', payload);
+      return response;
+    } catch (error) {
+      console.error("Failed to add article", error);
+      throw error;
+    }
   },
 
   updatePost: async (id: string, updates: Partial<PostData>): Promise<PostData | null> => {

@@ -7,7 +7,8 @@ import { CalendarIcon, Sparkles, X, ArrowLeft, Loader2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { postService, Language, Category } from "@/services/post-service";
+import { postService, Category } from "@/services/post-service";
+import { languageService, Language } from "@/services/language-service";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -127,7 +128,7 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
 
             try {
                 const [langData, catData] = await Promise.all([
-                    postService.getLanguages(),
+                    languageService.getLanguages(),
                     postService.getCategories()
                 ]);
                 console.log("Languages:", langData);
@@ -159,7 +160,10 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
         (initialData as any)?.releaseDate ? new Date((initialData as any).releaseDate) : undefined
     );
     const [content, setContent] = useState(initialData?.content || "");
-    const [imagePreview, setImagePreview] = useState<string | null>(initialData?.image || null);
+    const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(
+        // Use initial string URL if editing, otherwise null
+        initialData?.image || null
+    );
     
     // Form State
     const [language, setLanguage] = useState(initialData?.language || "");
@@ -196,19 +200,8 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
 
     const [errors, setErrors] = useState<Record<string, boolean>>({});
 
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setImagePreview(reader.result as string);
-        };
-        reader.readAsDataURL(file);
-        }
-    };
-
     const removeImage = () => {
-        setImagePreview(null);
+        setImagePreviewUrl(null);
     }
 
     const handleSettingChange = (key: keyof typeof settings) => {
@@ -225,43 +218,49 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
         const newErrors: Record<string, boolean> = {};
         if (!language) newErrors.language = true;
         if (!category) newErrors.category = true;
-        if (!date) newErrors.date = true;
         if (!headLine) newErrors.headLine = true;
-        if (!reporter) newErrors.reporter = true;
+        if (!content) newErrors.content = true;
 
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
+            alert("Please fill out all required fields marked with *.");
             return;
+        }
+
+        if (!imagePreviewUrl) {
+             alert("A 'Featured Image' URL is required. Please provide one.");
+             return;
         }
 
         setIsSaving(true);
 
         try {
-            // Map form data to service PostData structure
-            const serviceData = {
-                title: headLine, // Mapping headLine to title
-                language,
-                category,
-                subCategory,
-                content,
-                image: imagePreview || "",
-                seoTitle: seo.title,
-                seoDescription: seo.description,
-                seoKeywords: seo.keyword,
-                postBy: reporter,
-                releaseDate: date ? format(date, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd"),
-                postDate: format(new Date(), "yyyy-MM-dd"), // Assuming current date for postDate
-                status: settings.publish ? "Publish" : "Draft" as "Publish" | "Draft", // correct casting or logic
-                socialPost: settings.social,
-                // Add other mapped fields if necessary, or update service to accept more
+            // Generate a slug from the headline and append a unique identifier to prevent 409 DB Conflicts on unique indexes
+            const baseSlug = headLine
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/(^-|-$)+/g, '');
+            const generatedSlug = `${baseSlug}-${Math.random().toString(36).substring(2, 8)}`;
+
+            // Map form data strictly to Add Article API requirements
+            const payload = {
+                headline: headLine, 
+                content: content,
+                slug: generatedSlug,
+                category: category,
+                language: language,
+                image: imagePreviewUrl || "", // URL string directly
+                status: settings.publish ? "published" : "draft" 
             };
 
             if (isEditing && initialData?.id) {
-                await import("@/services/post-service").then(mod => mod.postService.updatePost(initialData.id!, serviceData));
-                alert("Post updated successfully!");
+                // If the user wants to keep `updatePost` it can stay, but the payload structure is different here now
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                await import("@/services/post-service").then(mod => mod.postService.updatePost(initialData.id!, payload as any));
+                alert("Article updated successfully!");
             } else {
-                 await import("@/services/post-service").then(mod => mod.postService.createPost(serviceData));
-                 alert("Post saved successfully!");
+                 await import("@/services/post-service").then(mod => mod.postService.createArticle(payload));
+                 alert("Article saved successfully!");
             }
              router.push("/post/list");
         } catch (error) {
@@ -302,7 +301,7 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
                         <SelectItem value="error" disabled>Failed to load languages</SelectItem>
                     ) : languages.length > 0 ? (
                         languages.map((lang) => (
-                            <SelectItem key={lang._id} value={lang.name}>
+                            <SelectItem key={lang._id} value={lang._id}>
                                 {lang.name}
                             </SelectItem>
                         ))
@@ -326,7 +325,7 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
                         <SelectItem value="error" disabled>Failed to load categories</SelectItem>
                     ) : categories.length > 0 ? (
                         categories.map((cat) => (
-                            <SelectItem key={cat._id} value={cat.name}>
+                            <SelectItem key={cat._id} value={cat._id}>
                                 {cat.name}
                             </SelectItem>
                         ))
@@ -444,14 +443,16 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
                 <h3 className="text-lg font-medium">Media</h3>
                 <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                        <Label>Image Upload</Label>
-                        <div className="flex items-center gap-4">
-                            <Input type="file" onChange={handleImageChange} accept="image/*" className="cursor-pointer" />
-                        </div>
-                        {imagePreview && (
-                            <div className="relative mt-2 w-40 h-24 rounded-md overflow-hidden border">
+                        <Label>Image URL</Label>
+                        <Input 
+                            placeholder="https://example.com/image.jpg"
+                            value={imagePreviewUrl || ""}
+                            onChange={(e) => setImagePreviewUrl(e.target.value)}
+                        />
+                        {imagePreviewUrl && (
+                            <div className="relative mt-2 w-40 h-24 rounded-md overflow-hidden border bg-muted flex items-center justify-center">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                                <img src={imagePreviewUrl} alt="Preview" className="w-full h-full object-cover" />
                                 <Button
                                     variant="destructive"
                                     size="icon"

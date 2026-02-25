@@ -11,6 +11,7 @@ export interface Photo {
     large: { width: number; height: number };
   };
   createdAt: string;
+  status?: "Active" | "Deleted" | string;
 }
 
 export interface UploadPhotoResponse {
@@ -29,7 +30,7 @@ export interface GetPhotosResponse {
 export const mediaService = {
   uploadPhoto: async (formData: FormData): Promise<UploadPhotoResponse> => {
     try {
-      const response = await api.post<UploadPhotoResponse>('/media/upload', formData);
+      const response = await api.post<UploadPhotoResponse>('/media', formData);
       return response;
     } catch (error) {
       console.error("Media upload failed", error);
@@ -39,20 +40,51 @@ export const mediaService = {
 
   getPhotos: async (page = 1, limit = 20): Promise<GetPhotosResponse> => {
     try {
-        // Adjust endpoint as per actual backend
-      return await api.get<GetPhotosResponse>(`/media?page=${page}&limit=${limit}`);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const response = await api.get<any>(`/media?page=${page}&limit=${limit}`);
+      
+      // Handle various response wrappers
+      const photos = Array.isArray(response) ? response : (response?.data || response?.photos || []);
+      const totalPages = response?.totalPages || 1;
+      const currentPage = response?.currentPage || page;
+      const totalPhotos = response?.totalPhotos || photos.length;
+      
+      return { photos, totalPages, currentPage, totalPhotos };
     } catch (error) {
       console.error("Failed to fetch photos", error);
       throw error;
     }
   },
 
-  deletePhoto: async (id: string): Promise<boolean> => {
+  getPhotoById: async (id: string): Promise<Photo> => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const response = await api.get<any>(`/media/${id}`);
+      // Safely unpack if backend nested the data
+      const data = response?.data ? response.data : response;
+      return data;
+    } catch (error) {
+      console.error(`Failed to fetch photo with ID ${id}`, error);
+      throw error;
+    }
+  },
+
+  deletePhoto: async (id: string): Promise<void> => {
     try {
       await api.delete(`/media/${id}`);
-      return true;
     } catch (error) {
       console.error("Failed to delete photo", error);
+      throw error;
+    }
+  },
+
+  toggleSoftDeletePhoto: async (id: string): Promise<any> => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const response = await api.patch<any>(`/media/${id}/toggle-soft-delete`);
+      return response;
+    } catch (error) {
+      console.error(`Failed to toggle soft delete for photo with ID ${id}`, error);
       throw error;
     }
   }

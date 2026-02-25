@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { ColumnDef } from "@tanstack/react-table"
-import { Plus, Edit, Trash2, ArrowUpDown } from "lucide-react"
+import { Plus, Edit, Trash2, ArrowUpDown, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { DataTable } from "@/components/ui/data-table"
@@ -28,9 +28,11 @@ export function UserList() {
   const [roles, setRoles] = useState<Role[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [isFetchingUser, setIsFetchingUser] = useState<string | null>(null)
   
   // Delete Dialog state
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -63,12 +65,27 @@ export function UserList() {
 
   const handleAddClick = () => {
     setSelectedUser(null)
+    setSuccess(null)
     setIsFormOpen(true)
   }
 
-  const handleEditClick = (user: User) => {
-    setSelectedUser(user)
-    setIsFormOpen(true)
+  const handleEditClick = async (user: User) => {
+    setIsFetchingUser(user._id)
+    setError(null)
+    setSuccess(null)
+    try {
+      const fetchedUser = await userService.getUserById(user._id)
+      setSelectedUser(fetchedUser)
+      setIsFormOpen(true)
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+         setError((err as { customMessage?: string }).customMessage || err.message)
+      } else {
+         setError("Failed to fetch user details.")
+      }
+    } finally {
+      setIsFetchingUser(null)
+    }
   }
 
   const handleDeleteClick = (user: User) => {
@@ -76,14 +93,16 @@ export function UserList() {
     setIsDeleteDialogOpen(true)
   }
 
-  const handleFormSubmit = async (formData: FormData) => {
+  const handleFormSubmit = async (payload: any) => {
     try {
       if (selectedUser) {
         // Update
-        await userService.updateUser(selectedUser._id, formData)
+        await userService.updateUser(selectedUser._id, payload)
+        setSuccess(`User "${payload.fullName}" updated successfully.`)
       } else {
         // Create
-        await userService.createUser(formData)
+        await userService.createUser(payload)
+        setSuccess(`User "${payload.fullName}" created successfully.`)
       }
       await fetchData() // Refresh list
     } catch (err: unknown) {
@@ -310,8 +329,13 @@ export function UserList() {
                 size="icon"
                 className="h-7 w-7 text-emerald-600 border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-100 rounded-sm shadow-none p-1.5"
                 onClick={() => handleEditClick(user)}
+                disabled={isFetchingUser === user._id}
               >
-                <Edit className="h-full w-full" />
+                {isFetchingUser === user._id ? (
+                  <Loader2 className="animate-spin h-full w-full" />
+                ) : (
+                  <Edit className="h-full w-full" />
+                )}
               </Button>
               <Button
                  variant="outline"
@@ -326,7 +350,7 @@ export function UserList() {
         },
       },
     ],
-    [roles]
+    [roles, isFetchingUser]
   )
 
   return (
@@ -345,6 +369,13 @@ export function UserList() {
         <Alert variant="destructive">
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {success && (
+        <Alert className="bg-green-50 text-green-800 border-green-200">
+          <AlertTitle>Success</AlertTitle>
+          <AlertDescription>{success}</AlertDescription>
         </Alert>
       )}
 

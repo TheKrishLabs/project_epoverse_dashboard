@@ -79,6 +79,19 @@ export const roleService = {
   },
 
   /**
+   * Toggle soft delete (Active/Inactive status) of a role
+   */
+  toggleSoftDeleteRole: async (id: string): Promise<Role> => {
+    try {
+      const response = await api.patch<Role>(`${BASE_URL}/${id}/toggle-soft-delete`);
+      return response;
+    } catch (error) {
+      console.error(`Error toggling status for role ${id}:`, error);
+      throw error;
+    }
+  },
+
+  /**
    * Delete a role
    */
   deleteRole: async (id: string): Promise<Record<string, unknown>> => {

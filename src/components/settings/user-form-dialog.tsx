@@ -36,9 +36,9 @@ import { Role } from "@/services/role-service"
 const userSchema = z.object({
   fullName: z.string().min(2, { message: "Name must be at least 2 characters" }),
   email: z.string().email({ message: "Invalid email" }),
-  mobile: z.string().optional(),
+  phoneNumber: z.string().optional(),
   role: z.string().min(1, { message: "Role is required" }),
-  status: z.enum(["Active", "Inactive"]),
+  status: z.enum(["active", "inActive"]),
   password: z.string().optional(),
   image: z.any().optional(), // Handle File/FileList in component
 })
@@ -50,7 +50,7 @@ interface UserFormDialogProps {
   onOpenChange: (open: boolean) => void
   user?: User | null
   roles: Role[]
-  onSubmit: (formData: FormData) => Promise<void>
+  onSubmit: (payload: any) => Promise<void>
 }
 
 export function UserFormDialog({
@@ -68,9 +68,9 @@ export function UserFormDialog({
     defaultValues: {
       fullName: "",
       email: "",
-      mobile: "",
+      phoneNumber: "",
       role: "",
-      status: "Active",
+      status: "active",
       password: "",
     },
   })
@@ -84,9 +84,9 @@ export function UserFormDialog({
       form.reset({
         fullName: user?.fullName || "",
         email: user?.email || "",
-        mobile: user?.mobile || "",
+        phoneNumber: (user as any)?.phoneNumber || (user as any)?.mobile || "",
         role: roleValue,
-        status: user?.status || "Active",
+        status: user?.status === "Active" || user?.status === "active" ? "active" : "inActive",
         password: "", // Always empty when editing
       })
     }
@@ -95,26 +95,26 @@ export function UserFormDialog({
   const handleSubmit = async (data: UserFormValues) => {
     setIsLoading(true)
     try {
-      const formData = new FormData()
-      formData.append("fullName", data.fullName)
-      formData.append("email", data.email)
-      if (data.mobile) formData.append("mobile", data.mobile)
-      formData.append("role", data.role)
-      formData.append("status", data.status)
+      const payload: Record<string, any> = {
+        fullName: data.fullName,
+        email: data.email,
+        phoneNumber: data.phoneNumber,
+        role: data.role,
+        status: data.status,
+      }
       
-      // Only append password if provided (required on create, optional on edit ideally)
-      if (data.password) formData.append("password", data.password)
-      if (!user && !data.password) {
+      // Always append userType as admin for this specific dashboard portal
+      payload.userType = "admin"
+      
+      if (data.password) {
+        payload.password = data.password
+      } else if (!user) {
         form.setError("password", { message: "Password is required for new users" })
         setIsLoading(false)
         return
       }
 
-      if (imageFile) {
-        formData.append("image", imageFile)
-      }
-
-      await onSubmit(formData)
+      await onSubmit(payload)
       onOpenChange(false)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
@@ -176,10 +176,10 @@ export function UserFormDialog({
             <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="mobile"
+                  name="phoneNumber"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Mobile</FormLabel>
+                      <FormLabel>Phone Number</FormLabel>
                       <FormControl>
                         <Input placeholder="1234567890" {...field} disabled={isLoading} />
                       </FormControl>
@@ -238,8 +238,8 @@ export function UserFormDialog({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent side="top">
-                            <SelectItem value="Active">Active</SelectItem>
-                            <SelectItem value="Inactive">Inactive</SelectItem>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="inActive">Inactive</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

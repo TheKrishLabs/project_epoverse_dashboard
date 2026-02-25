@@ -4,13 +4,12 @@ import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Loader2, Upload, X, ImageIcon } from "lucide-react";
+import { Loader2, X, ImageIcon, VideoIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -28,9 +27,14 @@ const formSchema = z.object({
   reference: z.string().optional(),
 });
 
-export function PhotoUploadForm() {
+interface PhotoUploadFormProps {
+  onUploadSuccess?: () => void;
+}
+
+export function PhotoUploadForm({ onUploadSuccess }: PhotoUploadFormProps) {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [previewType, setPreviewType] = useState<'image' | 'video' | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -49,22 +53,28 @@ export function PhotoUploadForm() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
-      if (selectedFile.size > 5 * 1024 * 1024) {
-        alert("File size must be less than 5MB");
+      const isVideo = selectedFile.type.startsWith('video/');
+      const maxSize = isVideo ? 50 * 1024 * 1024 : 5 * 1024 * 1024; // 50MB for video, 5MB for img
+
+      if (selectedFile.size > maxSize) {
+        alert(`File size must be less than ${isVideo ? '50MB' : '5MB'}`);
         return;
       }
       setFile(selectedFile);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreview(reader.result as string);
-      };
-      reader.readAsDataURL(selectedFile);
+      setPreviewType(isVideo ? 'video' : 'image');
+      
+      const URL = window.URL || window.webkitURL;
+      setPreview(URL.createObjectURL(selectedFile));
     }
   };
 
   const clearFile = () => {
     setFile(null);
+    if (preview) {
+        URL.revokeObjectURL(preview);
+    }
     setPreview(null);
+    setPreviewType(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -79,7 +89,8 @@ export function PhotoUploadForm() {
     setIsUploading(true);
     try {
       const formData = new FormData();
-      formData.append("image", file); // Key might need to match backend 'image' or 'file'
+      // The backend explicitly requests the key "file" for both images and videos
+      formData.append("file", file); 
       formData.append("thumbHeight", values.thumbHeight);
       formData.append("thumbWidth", values.thumbWidth);
       formData.append("largeHeight", values.largeHeight);
@@ -88,14 +99,17 @@ export function PhotoUploadForm() {
       if (values.reference) formData.append("reference", values.reference);
 
       await mediaService.uploadPhoto(formData);
-      alert("Image uploaded successfully!");
+      alert("Media uploaded successfully!");
       
       // Reset form
       form.reset();
       clearFile();
-    } catch (error) {
+      onUploadSuccess?.();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
       console.error(error);
-      alert("Failed to upload image.");
+      const msg = error?.response?.data?.message || error?.message || "Failed to upload media.";
+      alert(msg);
     } finally {
       setIsUploading(false);
     }
@@ -104,8 +118,8 @@ export function PhotoUploadForm() {
   return (
     <div className="bg-card rounded-lg border shadow-sm p-6">
       <div className="mb-6">
-        <h2 className="text-lg font-semibold mb-1">Insert image</h2>
-        <p className="text-sm text-muted-foreground">Upload and configure your image details.</p>
+        <h2 className="text-lg font-semibold mb-1">Upload Media</h2>
+        <p className="text-sm text-muted-foreground">Upload and configure your image or video details.</p>
       </div>
 
       <Form {...form}>
@@ -177,7 +191,7 @@ export function PhotoUploadForm() {
           <div className="grid gap-8 md:grid-cols-2">
              {/* File Upload */}
             <div className="space-y-4">
-                 <FormLabel className="block">Image <span className="text-red-500">*</span></FormLabel>
+                 <FormLabel className="block">Media File <span className="text-red-500">*</span></FormLabel>
                  <div className="flex gap-2">
                      <Button
                         type="button"
@@ -195,16 +209,20 @@ export function PhotoUploadForm() {
                         type="file"
                         className="hidden"
                         ref={fileInputRef}
-                        accept="image/*"
+                        accept="image/*,video/*"
                         onChange={handleFileChange}
                      />
                  </div>
-                 <p className="text-xs text-yellow-600 font-medium">* File Size Max 5 Mb</p>
+                 <p className="text-xs text-yellow-600 font-medium">* Image Max 5 MB | Video Max 50 MB</p>
                  
                  {preview && (
                     <div className="relative mt-4 aspect-video w-full max-w-sm rounded-lg overflow-hidden border bg-muted flex items-center justify-center">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={preview} alt="Preview" className="w-full h-full object-contain" />
+                        {previewType === 'video' ? (
+                            <video src={preview} controls className="w-full h-full object-contain" />
+                        ) : (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img src={preview} alt="Preview" className="w-full h-full object-contain" />
+                        )}
                         <Button
                             type="button"
                             variant="destructive"
@@ -219,8 +237,11 @@ export function PhotoUploadForm() {
                  {!preview && (
                      <div className="mt-4 aspect-video w-full max-w-sm rounded-lg border border-dashed flex items-center justify-center bg-muted/30">
                          <div className="flex flex-col items-center text-muted-foreground">
-                             <ImageIcon className="h-8 w-8 mb-2 opacity-50" />
-                             <span className="text-xs">Image Preview</span>
+                             <div className="flex gap-2 mb-2 opacity-50">
+                                <ImageIcon className="h-8 w-8" />
+                                <VideoIcon className="h-8 w-8" />
+                             </div>
+                             <span className="text-xs">Media Preview</span>
                          </div>
                      </div>
                  )}
@@ -270,7 +291,7 @@ export function PhotoUploadForm() {
              </Button>
              <Button type="submit" className="bg-green-600 hover:bg-green-700 text-white" disabled={isUploading}>
                {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-               {isUploading ? "Uploading..." : "Upload image"}
+               {isUploading ? "Uploading..." : "Upload Media"}
              </Button>
           </div>
         </form>
