@@ -282,6 +282,12 @@ export const sidebarNav: SidebarNavGroup[] = [
             icon: FileText,
             variant: "ghost",
           },
+          {
+            title: "Language List",
+            href: "/settings/languages",
+            icon: FileText,
+            variant: "ghost",
+          },
         ]
       },
       {

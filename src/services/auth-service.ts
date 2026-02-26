@@ -39,9 +39,11 @@ export const authService = {
 
       // Handle the token storage.
       // If the API returns a 'token' field, we store it.
-      // If NOT, we might need to assume the user IS authenticated if we got a 200 OK and user data.
       
-      const tokenToStore = data.accessToken || data.token;
+      const responseData = data as Record<string, unknown>;
+      const nestedData = responseData.data as Record<string, unknown> | undefined;
+      const nestedToken = (nestedData?.accessToken || nestedData?.token) as string | undefined;
+      const tokenToStore = data.accessToken || data.token || nestedToken;
       
       // If no token but we have user data, we might generate a dummy one or check headers?
       // For now, let's assume if data.email exists, it's a success.

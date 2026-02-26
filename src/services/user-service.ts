@@ -4,9 +4,9 @@ export interface User {
   _id: string;
   fullName: string;
   email: string;
-  mobile?: string;
+  phoneNumber?: string;
   role?: string | { _id: string; name: string };
-  status: 'Active' | 'Inactive';
+  status: 'Active' | 'Inactive' | 'active' | 'inActive';
   image?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -21,11 +21,11 @@ export interface UserResponse {
 
 // MOCK DATA for Users
 const mockUsers: User[] = [
-  { _id: '1', fullName: 'essa essa', email: 'essa@test.com', mobile: '7777777', role: { _id: '2', name: 'Reporter' }, status: 'Active', createdAt: '2026-01-30T20:24:00Z' },
-  { _id: '2', fullName: 'Joel', email: 'joel@gmail.com', mobile: '9049885903', role: 'Reporter', status: 'Active', createdAt: '2025-12-28T18:53:00Z' },
-  { _id: '3', fullName: 'ANKET KUMAR', email: 'ankit@gmail.com', mobile: '9770683852', role: 'Reporter', status: 'Active', createdAt: '2025-11-29T17:42:00Z' },
-  { _id: '4', fullName: 'ashish', email: 'ashish@gmail.com', mobile: '9685748596', role: 'Reporter', status: 'Active', createdAt: '2025-11-14T21:40:00Z' },
-  { _id: '6', fullName: 'sanjid', email: '', mobile: '', role: 'Reporter', status: 'Active', createdAt: '2025-07-30T18:05:00Z' },
+  { _id: '1', fullName: 'essa essa', email: 'essa@test.com', phoneNumber: '7777777', role: { _id: '2', name: 'Reporter' }, status: 'Active', createdAt: '2026-01-30T20:24:00Z' },
+  { _id: '2', fullName: 'Joel', email: 'joel@gmail.com', phoneNumber: '9049885903', role: 'Reporter', status: 'Active', createdAt: '2025-12-28T18:53:00Z' },
+  { _id: '3', fullName: 'ANKET KUMAR', email: 'ankit@gmail.com', phoneNumber: '9770683852', role: 'Reporter', status: 'Active', createdAt: '2025-11-29T17:42:00Z' },
+  { _id: '4', fullName: 'ashish', email: 'ashish@gmail.com', phoneNumber: '9685748596', role: 'Reporter', status: 'Active', createdAt: '2025-11-14T21:40:00Z' },
+  { _id: '6', fullName: 'sanjid', email: '', phoneNumber: '', role: 'Reporter', status: 'Active', createdAt: '2025-07-30T18:05:00Z' },
 ];
 
 export const userService = {
@@ -33,31 +33,44 @@ export const userService = {
    * Fetch all users
    */
   getUsers: async (): Promise<User[]> => {
-    return new Promise((resolve) => setTimeout(() => resolve([...mockUsers]), 600));
+    try {
+      const response = await api.get<{ statusCode: number; message: string; data: User[] }>('/users');
+      // The backend structure could be direct array or wrapped. Being defensive.
+      if (Array.isArray(response)) return response;
+      if (response && Array.isArray(response.data)) return response.data;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (response as any)?.users || [];
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      throw error;
+    }
   },
 
   /**
    * Fetch a single user by ID
    */
   getUserById: async (id: string): Promise<User> => {
-    return new Promise((resolve, reject) => setTimeout(() => {
-      const user = mockUsers.find(u => u._id === id);
-      if (user) resolve(user);
-      else reject(new Error('User not found'));
-    }, 500));
+    try {
+      const response = await api.get<{ data?: User } | User>(`/users/${id}`);
+      
+      // Handle potential wrapped response structures
+      if (response && 'data' in response && response.data) {
+        return response.data;
+      }
+      return response as User;
+    } catch (error) {
+      console.error(`Error fetching user ${id}:`, error);
+      throw error;
+    }
   },
 
   /**
-   * Create a new user (multipart/form-data for image)
+   * Create a new user by Admin
    */
-  createUser: async (formData: FormData): Promise<UserResponse> => {
+  createUser: async (payload: Record<string, unknown> | FormData): Promise<UserResponse> => {
     try {
-      console.log('--- Submitting User FormData ---');
-      for (const pair of formData.entries()) {
-        console.log(`${pair[0]}: ${pair[1]}`);
-      }
-      
-      const response = await api.post<UserResponse>('/users/add', formData);
+      console.log('--- Submitting User JSON Payload ---', payload);
+      const response = await api.post<UserResponse>('/users', payload);
       return response;
     } catch (error) {
       console.error('Error creating user:', error);
@@ -68,29 +81,15 @@ export const userService = {
   /**
    * Update an existing user
    */
-  updateUser: async (id: string, formData: FormData): Promise<UserResponse> => {
-    return new Promise((resolve, reject) => setTimeout(() => {
-      const index = mockUsers.findIndex(u => u._id === id);
-      if (index > -1) {
-        const updatedUser = { ...mockUsers[index] };
-        if (formData.has('fullName')) updatedUser.fullName = formData.get('fullName') as string;
-        if (formData.has('email')) updatedUser.email = formData.get('email') as string;
-        if (formData.has('mobile')) updatedUser.mobile = formData.get('mobile') as string;
-        if (formData.has('role')) updatedUser.role = formData.get('role') as string;
-        if (formData.has('status')) updatedUser.status = formData.get('status') as 'Active' | 'Inactive';
-        
-        const imageFile = formData.get('image');
-        if (imageFile instanceof File) {
-           updatedUser.image = URL.createObjectURL(imageFile); // Mock image URL for preview
-        }
-
-        updatedUser.updatedAt = new Date().toISOString();
-        mockUsers[index] = updatedUser;
-        resolve({ success: true, message: 'User updated successfully', data: mockUsers, user: updatedUser });
-      } else {
-        reject(new Error('User not found'));
-      }
-    }, 800));
+  updateUser: async (id: string, payload: Record<string, unknown> | FormData): Promise<UserResponse> => {
+    try {
+      console.log(`--- Submitting User Update Payload for ${id} ---`, payload);
+      const response = await api.put<UserResponse>(`/users/${id}/update`, payload);
+      return response;
+    } catch (error) {
+      console.error(`Error updating user ${id}:`, error);
+      throw error;
+    }
   },
 
   /**

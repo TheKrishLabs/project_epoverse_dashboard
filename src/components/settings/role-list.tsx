@@ -26,6 +26,8 @@ export function RoleList() {
   const [roles, setRoles] = useState<Role[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+  const [isToggling, setIsToggling] = useState<string | null>(null)
   
   // Delete Dialog state
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -37,7 +39,7 @@ export function RoleList() {
     try {
       const data = await roleService.getRoles()
       // Adapt based on API response structure if needed
-      setRoles((data || []).filter(role => !role.isDeleted))
+      setRoles(data || [])
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError((err as { customMessage?: string }).customMessage || err.message)
@@ -65,7 +67,24 @@ export function RoleList() {
     setRoleToDelete(role)
     setIsDeleteDialogOpen(true)
   }
-
+  const handleToggleStatus = async (role: Role) => {
+    setIsToggling(role._id)
+    setError(null)
+    setSuccess(null)
+    try {
+      await roleService.toggleSoftDeleteRole(role._id)
+      setRoles(prev => prev.map(r => r._id === role._id ? { ...r, isDeleted: !r.isDeleted } : r))
+      setSuccess(`Role "${role.name}" status updated successfully.`)
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError((err as { customMessage?: string }).customMessage || err.message)
+      } else {
+        setError("Failed to update role status.")
+      }
+    } finally {
+      setIsToggling(null)
+    }
+  }
 
 
   const confirmDelete = async () => {
@@ -123,12 +142,33 @@ export function RoleList() {
         cell: ({ row }) => <div>{row.getValue("name")}</div>,
       },
       {
+        accessorKey: "isDeleted",
+        header: "Status",
+        cell: ({ row }) => {
+          const isDeleted = row.getValue("isDeleted") as boolean;
+          return (
+            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${isDeleted ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+              {isDeleted ? "Inactive" : "Active"}
+            </span>
+          )
+        }
+      },
+      {
         id: "actions",
         header: () => <div className="text-right font-semibold">Action</div>,
         cell: ({ row }) => {
           const role = row.original
           return (
             <div className="flex items-center justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className={`h-8 px-2 text-xs ${role.isDeleted ? 'text-green-600 border-green-200 hover:bg-green-50' : 'text-orange-600 border-orange-200 hover:bg-orange-50'}`}
+                onClick={() => handleToggleStatus(role)}
+                disabled={isToggling === role._id}
+              >
+                {isToggling === role._id ? "..." : role.isDeleted ? "Activate" : "Deactivate"}
+              </Button>
               <Button
                 variant="outline"
                 size="icon"
@@ -170,6 +210,13 @@ export function RoleList() {
         <Alert variant="destructive">
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {success && (
+        <Alert className="bg-green-50 text-green-800 border-green-200">
+          <AlertTitle>Success</AlertTitle>
+          <AlertDescription>{success}</AlertDescription>
         </Alert>
       )}
 

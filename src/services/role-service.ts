@@ -29,10 +29,15 @@ export const roleService = {
     try {
       // Handle array or wrapped object gracefully so .map() never breaks in UI
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response = await api.get<any>(`${BASE_URL}/fetch-all`);
+      const response = await api.get<any>(`${BASE_URL}`);
       return Array.isArray(response) ? response : (response?.data || response?.roles || []);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error fetching roles:', error);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const axiosError = error as any;
+      if (axiosError.response && axiosError.response.data) {
+        console.error('Backend Error Data:', axiosError.response.data);
+      }
       throw error;
     }
   },
@@ -57,7 +62,7 @@ export const roleService = {
    */
   createRole: async (data: { name: string; permissions?: Record<string, string[]> }): Promise<Role> => {
     try {
-      const response = await api.post<Role>(`${BASE_URL}/add`, data);
+      const response = await api.post<Role>(`${BASE_URL}`, data);
       return response;
     } catch (error) {
       console.error('Error creating role:', error);
@@ -74,6 +79,19 @@ export const roleService = {
       return response;
     } catch (error) {
       console.error(`Error updating role ${id}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Toggle soft delete (Active/Inactive status) of a role
+   */
+  toggleSoftDeleteRole: async (id: string): Promise<Role> => {
+    try {
+      const response = await api.patch<Role>(`${BASE_URL}/${id}/toggle-soft-delete`);
+      return response;
+    } catch (error) {
+      console.error(`Error toggling status for role ${id}:`, error);
       throw error;
     }
   },

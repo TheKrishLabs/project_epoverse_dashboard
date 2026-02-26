@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { pageService, PageData } from "@/services/page-service";
-import { postService, Language } from "@/services/post-service";
+import { languageService, Language } from "@/services/language-service";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -41,7 +41,7 @@ export function PageForm({ initialData, isEditing = false }: PageFormProps) {
             setIsLoadingLanguages(true);
             setIsLanguageError(false);
             try {
-                const langData = await postService.getLanguages();
+                const langData = await languageService.getLanguages();
                 setLanguages(langData);
             } catch (error) {
                 console.error("Failed to load languages", error);
