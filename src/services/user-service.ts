@@ -34,7 +34,7 @@ export const userService = {
    */
   getUsers: async (): Promise<User[]> => {
     try {
-      const response = await api.get<{ statusCode: number; message: string; data: User[] }>('/users/fetch-all');
+      const response = await api.get<{ statusCode: number; message: string; data: User[] }>('/users');
       // The backend structure could be direct array or wrapped. Being defensive.
       if (Array.isArray(response)) return response;
       if (response && Array.isArray(response.data)) return response.data;
@@ -51,13 +51,13 @@ export const userService = {
    */
   getUserById: async (id: string): Promise<User> => {
     try {
-      const response = await api.get<{ statusCode: number; message: string; data: User }>(`/users/${id}`);
+      const response = await api.get<{ data?: User } | User>(`/users/${id}`);
       
       // Handle potential wrapped response structures
-      if ((response as any)?.data) {
-        return (response as any).data;
+      if (response && 'data' in response && response.data) {
+        return response.data;
       }
-      return response as any;
+      return response as User;
     } catch (error) {
       console.error(`Error fetching user ${id}:`, error);
       throw error;
@@ -67,10 +67,10 @@ export const userService = {
   /**
    * Create a new user by Admin
    */
-  createUser: async (payload: any): Promise<UserResponse> => {
+  createUser: async (payload: Record<string, unknown> | FormData): Promise<UserResponse> => {
     try {
       console.log('--- Submitting User JSON Payload ---', payload);
-      const response = await api.post<UserResponse>('/users/add', payload);
+      const response = await api.post<UserResponse>('/users', payload);
       return response;
     } catch (error) {
       console.error('Error creating user:', error);
@@ -81,7 +81,7 @@ export const userService = {
   /**
    * Update an existing user
    */
-  updateUser: async (id: string, payload: any): Promise<UserResponse> => {
+  updateUser: async (id: string, payload: Record<string, unknown> | FormData): Promise<UserResponse> => {
     try {
       console.log(`--- Submitting User Update Payload for ${id} ---`, payload);
       const response = await api.put<UserResponse>(`/users/${id}/update`, payload);

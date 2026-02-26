@@ -93,6 +93,7 @@ export function UserList() {
     setIsDeleteDialogOpen(true)
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleFormSubmit = async (payload: any) => {
     try {
       if (selectedUser) {

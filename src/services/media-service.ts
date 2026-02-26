@@ -78,6 +78,7 @@ export const mediaService = {
     }
   },
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   toggleSoftDeletePhoto: async (id: string): Promise<any> => {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

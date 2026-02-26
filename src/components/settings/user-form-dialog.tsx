@@ -50,6 +50,7 @@ interface UserFormDialogProps {
   onOpenChange: (open: boolean) => void
   user?: User | null
   roles: Role[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onSubmit: (payload: any) => Promise<void>
 }
 
@@ -84,7 +85,7 @@ export function UserFormDialog({
       form.reset({
         fullName: user?.fullName || "",
         email: user?.email || "",
-        phoneNumber: (user as any)?.phoneNumber || (user as any)?.mobile || "",
+        phoneNumber: user?.phoneNumber || (user as User & { mobile?: string })?.mobile || "",
         role: roleValue,
         status: user?.status === "Active" || user?.status === "active" ? "active" : "inActive",
         password: "", // Always empty when editing
@@ -95,7 +96,7 @@ export function UserFormDialog({
   const handleSubmit = async (data: UserFormValues) => {
     setIsLoading(true)
     try {
-      const payload: Record<string, any> = {
+      const payload: Record<string, unknown> = {
         fullName: data.fullName,
         email: data.email,
         phoneNumber: data.phoneNumber,
