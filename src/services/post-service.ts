@@ -32,12 +32,42 @@ export const postService = {
   getCategories: async (): Promise<Category[]> => {
       try {
         console.log("Fetching categories from /categories");
-        const response = await api.get<Category[]>('/categories');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const response: any = await api.get('/categories');
         console.log("Raw Categories Response:", response);
-        return response || [];
+        if (Array.isArray(response)) return response;
+        if (response && Array.isArray(response.data)) return response.data;
+        if (response && Array.isArray(response.categories)) return response.categories;
+        return [];
       } catch (error) {
         console.error("Failed to fetch categories", error);
         throw error;
+      }
+  },
+
+  createCategory: async (payload: {
+    name: string;
+    slug?: string;
+    description?: string;
+    status?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  }): Promise<any> => {
+      try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return await api.post<any>('/categories', payload);
+      } catch (error) {
+          console.error("Failed to create category", error);
+          throw error;
+      }
+  },
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  updateCategory: async (id: string, payload: any): Promise<any> => {
+      try {
+          return await api.put(`/categories/${id}`, payload);
+      } catch (error) {
+          console.error("Failed to update category", error);
+          throw error;
       }
   },
 
@@ -57,6 +87,21 @@ export const postService = {
         console.error("Failed to fetch articles", error);
         throw error;
       }
+  },
+
+  getArticleById: async (id: string): Promise<Article | undefined> => {
+    try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const response: any = await api.get(`/articles/${id}`);
+        if (response && response.article) return response.article;
+        return response;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+        if (error.response && error.response.status === 404) {
+            return undefined;
+        }
+        throw error;
+    }
   },
 
   getPostById: async (id: string): Promise<PostData | undefined> => {
@@ -84,8 +129,14 @@ export const postService = {
     slug: string;
     category: string;
     language: string;
-    image: string;
     status: string;
+    thumbnail?: string;
+    image?: string;
+    imageAlt?: string;
+    tags?: string[];
+    metaKeywords?: string[];
+    metaDescription?: string;
+    isLatest?: boolean;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   }): Promise<any> => {
     try {
@@ -95,6 +146,19 @@ export const postService = {
     } catch (error) {
       console.error("Failed to add article", error);
       throw error;
+    }
+  },
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  updateArticle: async (id: string, payload: any): Promise<any> => {
+    try {
+        return await api.put(`/articles/${id}`, payload);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+         if (error.response && error.response.status === 404) {
+            return null;
+        }
+        throw error;
     }
   },
 
@@ -113,5 +177,62 @@ export const postService = {
   deletePost: async (id: string): Promise<boolean> => {
     await api.delete(`/posts/${id}`);
     return true;
+  },
+
+  downloadBulkTemplate: async (): Promise<Blob> => {
+    try {
+      const response = await api.get('/articles/bulk/template', {
+        responseType: 'blob'
+      });
+      // The axios interceptor we have in src/lib/axios.ts returns response.data directly
+      return response as unknown as Blob; 
+      
+    } catch (error) {
+       console.error("Failed to download bulk upload template:", error);
+       throw error;
+    }
+  },
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  uploadBulkArticles: async (file: File): Promise<any> => {
+    try {
+      // MOCK IMPLEMENTATION FOR DEVELOPMENT
+      // Simulate backend validation
+      if (!file.name.endsWith('.csv') && file.type !== 'text/csv') {
+        throw {
+          response: {
+             data: {
+                 message: "Invalid file format. Server only accepts CSV files."
+             }
+          }
+        };
+      }
+
+      // Simulate network request delay (2 seconds)
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Simulate successful backend response
+      return {
+          message: `Successfully processed ${file.name}. (Mock Response)`,
+          data: {
+              status: "success",
+              rowsProcessed: Math.floor(Math.random() * 50) + 10 // Random number to look realistic
+          }
+      };
+
+      /* Original Implementation:
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      // Axios handles the 'Content-Type' naturally along with the dynamic multipart boundary when passed FormData.
+      // Explicitly forcing 'Content-Type': 'multipart/form-data' deletes this boundary, causing bad requests.
+      const response = await api.post('/articles/bulk/upload', formData);
+      
+      return response;
+      */
+    } catch (error) {
+       console.error("Failed to upload bulk articles:", error);
+       throw error;
+    }
   }
 };

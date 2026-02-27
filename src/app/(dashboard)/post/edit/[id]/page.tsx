@@ -21,7 +21,7 @@ export default function EditPostPage({ params }: EditPostPageProps) {
   useEffect(() => {
     const loadPost = async () => {
         try {
-            const data = await postService.getPostById(params.id);
+            const data = await postService.getArticleById(params.id);
             if (data) {
                 setPost(data);
             } else {

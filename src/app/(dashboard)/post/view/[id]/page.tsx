@@ -82,26 +82,30 @@ export default function ViewPostPage({ params }: ViewPostPageProps) {
                 <div className="relative h-64 w-full">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img 
-                        src={post.image} 
-                        alt={post.title} 
+                        src={post.image || post.featuredImage || "/placeholder-image.jpg"} 
+                        alt={post.headline || post.title || "Post Image"} 
                         className="w-full h-full object-cover"
                     />
                     <div className="absolute top-4 right-4">
-                        <Badge className={post.status === "Publish" ? "bg-emerald-600" : "bg-yellow-600"}>
-                            {post.status}
+                        <Badge className={(post.status === "Publish" || post.status === "Published" || post.status === "Active") ? "bg-emerald-600" : "bg-yellow-600"}>
+                            {post.status || "Unknown"}
                         </Badge>
                     </div>
                 </div>
                 <CardHeader>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                        <Badge variant="outline">{post.category}</Badge>
-                        <span>&gt;</span>
-                        <span className="font-medium">{post.subCategory}</span>
+                        <Badge variant="outline">{typeof post.category === 'object' ? post.category?.name : post.category || "Uncategorized"}</Badge>
+                        {post.subCategory && (
+                            <>
+                                <span>&gt;</span>
+                                <span className="font-medium">{post.subCategory}</span>
+                            </>
+                        )}
                         <span>•</span>
-                        <span className="flex items-center gap-1"><Globe className="h-3 w-3" /> {post.language}</span>
+                        <span className="flex items-center gap-1"><Globe className="h-3 w-3" /> {typeof post.language === 'object' ? post.language?.name : post.language || "Unknown"}</span>
                     </div>
-                    <CardTitle className="text-2xl">{post.title}</CardTitle>
-                    <p className="text-lg text-muted-foreground">{post.seoTitle}</p> 
+                    <CardTitle className="text-2xl">{post.headline || post.title || "Untitled"}</CardTitle>
+                    <p className="text-lg text-muted-foreground">{post.seo?.title || post.seoTitle}</p> 
                 </CardHeader>
                 <CardContent>
                     <Separator className="my-4" />
@@ -121,19 +125,19 @@ export default function ViewPostPage({ params }: ViewPostPageProps) {
                          <span className="text-sm text-muted-foreground flex items-center gap-2">
                             <User className="h-4 w-4" /> Reporter
                          </span>
-                         <span className="font-medium">{post.postBy}</span>
+                         <span className="font-medium">{post.reporter || post.postBy || "Anonymous"}</span>
                     </div>
                     <div className="flex items-center justify-between">
                          <span className="text-sm text-muted-foreground flex items-center gap-2">
                             <Calendar className="h-4 w-4" /> Release Date
                          </span>
-                         <span className="font-medium">{post.releaseDate}</span>
+                         <span className="font-medium">{post.releaseDate || (post.createdAt ? new Date(post.createdAt).toLocaleDateString() : "N/A")}</span>
                     </div>
                      <div className="flex items-center justify-between">
                          <span className="text-sm text-muted-foreground flex items-center gap-2">
-                            <Eye className="h-4 w-4" /> Hits
+                            <Eye className="h-4 w-4" /> Views
                          </span>
-                         <span className="font-medium">{post.hit?.toLocaleString()}</span>
+                         <span className="font-medium">{post.hit?.toLocaleString() || "0"}</span>
                     </div>
                 </CardContent>
             </Card>
@@ -145,19 +149,24 @@ export default function ViewPostPage({ params }: ViewPostPageProps) {
                 <CardContent className="space-y-4">
                     <div>
                         <span className="text-sm text-muted-foreground block mb-1">SEO Title</span>
-                        <p className="font-medium text-sm">{post.seoTitle || "N/A"}</p>
+                        <p className="font-medium text-sm">{post.seo?.title || post.seoTitle || "N/A"}</p>
                     </div>
                      <div>
                         <span className="text-sm text-muted-foreground block mb-1">Keywords</span>
                          <div className="flex flex-wrap gap-1">
-                            {post.seoKeywords ? post.seoKeywords.split(",").map((k: string, i: number) => (
-                                <Badge key={i} variant="secondary" className="text-xs">{k.trim()}</Badge>
-                            )) : "N/A"}
+                            {(() => {
+                                const keywords = post.seo?.keyword || post.seoKeywords;
+                                if (!keywords) return <span className="text-sm text-muted-foreground">N/A</span>;
+                                const keywordArray = Array.isArray(keywords) ? keywords : typeof keywords === 'string' ? keywords.split(",") : [];
+                                return keywordArray.map((k: string, i: number) => (
+                                    <Badge key={i} variant="secondary" className="text-xs">{k.trim()}</Badge>
+                                ));
+                            })()}
                          </div>
                     </div>
                      <div>
                         <span className="text-sm text-muted-foreground block mb-1">Description</span>
-                        <p className="text-sm text-muted-foreground">{post.seoDescription || "N/A"}</p>
+                        <p className="text-sm text-muted-foreground">{post.seo?.description || post.seoDescription || "N/A"}</p>
                     </div>
                 </CardContent>
             </Card>

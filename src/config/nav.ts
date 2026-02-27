@@ -288,6 +288,12 @@ export const sidebarNav: SidebarNavGroup[] = [
             icon: FileText,
             variant: "ghost",
           },
+          {
+            title: "Access Log",
+            href: "/settings/access-log",
+            icon: FileText,
+            variant: "ghost",
+          },
         ]
       },
       {
