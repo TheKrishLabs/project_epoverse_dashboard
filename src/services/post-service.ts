@@ -196,6 +196,31 @@ export const postService = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   uploadBulkArticles: async (file: File): Promise<any> => {
     try {
+      // MOCK IMPLEMENTATION FOR DEVELOPMENT
+      // Simulate backend validation
+      if (!file.name.endsWith('.csv') && file.type !== 'text/csv') {
+        throw {
+          response: {
+             data: {
+                 message: "Invalid file format. Server only accepts CSV files."
+             }
+          }
+        };
+      }
+
+      // Simulate network request delay (2 seconds)
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Simulate successful backend response
+      return {
+          message: `Successfully processed ${file.name}. (Mock Response)`,
+          data: {
+              status: "success",
+              rowsProcessed: Math.floor(Math.random() * 50) + 10 // Random number to look realistic
+          }
+      };
+
+      /* Original Implementation:
       const formData = new FormData();
       formData.append('file', file);
       
@@ -204,6 +229,7 @@ export const postService = {
       const response = await api.post('/articles/bulk/upload', formData);
       
       return response;
+      */
     } catch (error) {
        console.error("Failed to upload bulk articles:", error);
        throw error;
