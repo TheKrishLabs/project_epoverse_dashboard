@@ -157,20 +157,31 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
     const [date, setDate] = useState<Date | undefined>(
         initialData?.date ? new Date(initialData.date) : 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (initialData as any)?.releaseDate ? new Date((initialData as any).releaseDate) : undefined
+        (initialData as any)?.releaseDate ? new Date((initialData as any).releaseDate) : 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (initialData as any)?.createdAt ? new Date((initialData as any).createdAt) : undefined
     );
     const [content, setContent] = useState(initialData?.content || "");
     const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(
         // Use initial string URL if editing, otherwise null
-        initialData?.image || null
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        initialData?.image || (initialData as any)?.featuredImage || null
     );
     
     // Form State
-    const [language, setLanguage] = useState(initialData?.language || "");
-    const [category, setCategory] = useState(initialData?.category || "");
+    const [language, setLanguage] = useState(() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const langData: any = initialData?.language;
+        return typeof langData === 'object' && langData ? langData._id : (langData || "");
+    });
+    const [category, setCategory] = useState(() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const catData: any = initialData?.category;
+        return typeof catData === 'object' && catData ? catData._id : (catData || "");
+    });
     const [subCategory, setSubCategory] = useState(initialData?.subCategory || "");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [headLine, setHeadLine] = useState(initialData?.headLine || (initialData as any)?.title || "");
+    const [headLine, setHeadLine] = useState(initialData?.headLine || (initialData as any)?.headline || (initialData as any)?.title || "");
     const [shortHead, setShortHead] = useState(initialData?.shortHead || "");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [reporter, setReporter] = useState(initialData?.reporter || (initialData as any)?.postBy || "");
@@ -182,7 +193,7 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
         feature: false,
         recommended: false,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        publish: (initialData as any)?.status === "Publish",
+        publish: (initialData as any)?.status === "Publish" || (initialData as any)?.status === "published",
         schema: false,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         social: (initialData as any)?.socialPost || false
@@ -236,27 +247,37 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
 
         try {
             // Generate a slug from the headline and append a unique identifier to prevent 409 DB Conflicts on unique indexes
-            const baseSlug = headLine
+            const baseSlug = seo.customUrl || headLine
                 .toLowerCase()
                 .replace(/[^a-z0-9]+/g, '-')
                 .replace(/(^-|-$)+/g, '');
             const generatedSlug = `${baseSlug}-${Math.random().toString(36).substring(2, 8)}`;
 
+            // Convert tags/keywords to arrays safely
+            const keywordList = seo.keyword.split(',').map((s: string) => s.trim()).filter((s: string) => s.length > 0);
+
             // Map form data strictly to Add Article API requirements
             const payload = {
                 headline: headLine, 
                 content: content,
-                slug: generatedSlug,
                 category: category,
                 language: language,
-                image: imagePreviewUrl || "", // URL string directly
-                status: settings.publish ? "published" : "draft" 
+                slug: generatedSlug,
+                status: settings.publish ? "published" : "draft",
+                thumbnail: imagePreviewUrl || undefined,
+                image: imagePreviewUrl || undefined,
+                imageAlt: "featured image", // Optional: Add a field for alt text later
+                tags: keywordList, // Assuming we use SEO keywords for tags currently
+                metaKeywords: keywordList,
+                metaDescription: seo.description,
+                isLatest: settings.latest
             };
 
-            if (isEditing && initialData?.id) {
-                // If the user wants to keep `updatePost` it can stay, but the payload structure is different here now
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                await import("@/services/post-service").then(mod => mod.postService.updatePost(initialData.id!, payload as any));
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const origData: any = initialData;
+            if (isEditing && (origData?.id || origData?._id)) {
+                const updateId = origData.id || origData._id;
+                await import("@/services/post-service").then(mod => mod.postService.updateArticle(updateId, payload));
                 alert("Article updated successfully!");
             } else {
                  await import("@/services/post-service").then(mod => mod.postService.createArticle(payload));
