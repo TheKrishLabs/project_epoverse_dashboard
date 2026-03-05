@@ -9,7 +9,6 @@ import {
   Archive,
   Megaphone,
   Radio,
-  User,
   MessageSquare,
   BarChart,
   Video,
@@ -75,7 +74,7 @@ export const sidebarNav: SidebarNavGroup[] = [
             variant: "ghost",
           },
           {
-            title: "Breaking Post",
+            title: "Trending Post",
             href: "/post/breaking",
             icon: FileText,
             variant: "ghost",
@@ -183,12 +182,12 @@ export const sidebarNav: SidebarNavGroup[] = [
         icon: Gift,
         variant: "ghost",
       },
-      {
-        title: "Reporter",
-        href: "/reporter",
-        icon: User,
-        variant: "ghost",
-      },
+      // {
+      //   title: "Reporter",
+      //   href: "/reporter",
+      //   icon: User,
+      //   variant: "ghost",
+      // },
     ],
   },
   {
@@ -202,9 +201,23 @@ export const sidebarNav: SidebarNavGroup[] = [
       },
       {
         title: "Polls",
-        href: "/polls",
+        href: "#",
         icon: BarChart,
         variant: "ghost",
+        items: [
+          {
+            title: "Add Poll",
+            href: "/polls/add",
+            icon: BarChart,
+            variant: "ghost",
+          },
+          {
+            title: "Polls List",
+            href: "/polls",
+            icon: BarChart,
+            variant: "ghost",
+          },
+        ]
       },
       {
         title: "Subscribers",
@@ -271,7 +284,7 @@ export const sidebarNav: SidebarNavGroup[] = [
         variant: "ghost",
         items: [
           {
-            title: "User List",
+            title: "Employee List",
             href: "/settings/users",
             icon: Users,
             variant: "ghost",
