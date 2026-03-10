@@ -4,12 +4,13 @@ export interface PageData {
     id?: string;
     _id?: string;
     language: string;
+    languageName?: string;
     title: string;
     slug: string;
     details: string;
     photo: string | null;
     videoUrl: string;
-    metaKeyword: string;
+    metaKeywords: string;
     metaDescription: string;
     status?: string;
     createdAt?: string;
@@ -17,17 +18,29 @@ export interface PageData {
 
 export const pageService = {
   getPages: async (): Promise<PageData[]> => {
-    return api.get<PageData[]>('/pages');
+    try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const response = await api.get<any>('/pages');
+        const data = response.data || response;
+        
+        if (Array.isArray(data)) return data;
+        if (data && Array.isArray(data.data)) return data.data;
+        if (data && Array.isArray(data.pages)) return data.pages;
+        
+        return [];
+    } catch (error) {
+        console.error("Error fetching pages:", error);
+        throw error;
+    }
   },
 
   getPageById: async (id: string): Promise<PageData | undefined> => {
     try {
-        return await api.get<PageData>(`/pages/${id}`);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-        if (error.response && error.response.status === 404) {
-            return undefined;
-        }
+        const pages = await pageService.getPages();
+        const page = pages.find(p => p._id === id || p.id === id);
+        return page;
+    } catch (error) {
+        console.error("Error finding page by ID:", error);
         throw error;
     }
   },
@@ -38,7 +51,7 @@ export const pageService = {
 
   updatePage: async (id: string, updates: Partial<PageData>): Promise<PageData | null> => {
     try {
-        return await api.put<PageData>(`/pages/${id}`, updates);
+        return await api.patch<PageData>(`/pages/${id}`, updates);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
          if (error.response && error.response.status === 404) {

@@ -8,7 +8,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { DataTable } from "@/components/ui/data-table"
 import { PollData, pollService } from "@/services/poll-service"
-import { languageService } from "@/services/language-service"
+import { languageService, Language } from "@/services/language-service"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -24,7 +24,7 @@ import {
 
 export function PollList() {
   const [polls, setPolls] = useState<PollData[]>([])
-  // const [languages, setLanguages] = useState<Language[]>([])
+  const [languages, setLanguages] = useState<Language[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
@@ -36,7 +36,7 @@ export function PollList() {
     setIsLoading(true)
     setError(null)
     try {
-      const [pollsData] = await Promise.all([
+      const [pollsData, langData] = await Promise.all([
          pollService.getPolls(),
          languageService.getLanguages()
       ])
@@ -62,7 +62,7 @@ export function PollList() {
       ];
 
       setPolls(actualPolls)
-      // setLanguages(langData || [])
+      setLanguages(langData || [])
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError((err as { customMessage?: string }).customMessage || err.message)
@@ -77,6 +77,19 @@ export function PollList() {
   useEffect(() => {
     fetchData()
   }, [])
+
+  // Helper function to map language ID to language name safely
+  const getLanguageName = useCallback((langValue: unknown) => {
+      if (!langValue) return 'Unknown';
+      // If it's already an object with a name, use it
+      if (typeof langValue === 'object' && 'name' in langValue) return String((langValue as Record<string, unknown>).name);
+      // If it's a string (ID), lookup in the languages array
+      if (typeof langValue === 'string') {
+          const found = languages.find(l => l._id === langValue || l.name === langValue);
+          if (found) return found.name;
+      }
+      return String(langValue); // Fallback to raw string if nothing matches
+  }, [languages]);
 
   const handleDeleteClick = (poll: PollData) => {
     setPollToDelete(poll)
@@ -123,7 +136,7 @@ export function PollList() {
       const headers = ["Question", "Vote Permission", "Language", "Status"];
       const csvContent = [
           headers.join(","),
-          ...polls.map(p => `"${p.question.replace(/"/g, '""')}","${p.votePermission === 'all' ? 'All Users' : 'Registered Users'}","${p.language}","${p.status}"`)
+          ...polls.map(p => `"${p.question.replace(/"/g, '""')}","${p.votePermission === 'all' ? 'All Users' : 'Registered Users'}","${getLanguageName(p.language)}","${p.status}"`)
       ].join("\n");
 
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -144,7 +157,7 @@ export function PollList() {
       
       let tableHtml = "<table><thead><tr><th>Question</th><th>Vote Permission</th><th>Language</th><th>Status</th></tr></thead><tbody>";
       polls.forEach(p => {
-          tableHtml += `<tr><td>${p.question}</td><td>${p.votePermission === 'all' ? 'All Users' : 'Registered Users'}</td><td>${p.language}</td><td>${p.status}</td></tr>`;
+          tableHtml += `<tr><td>${p.question}</td><td>${p.votePermission === 'all' ? 'All Users' : 'Registered Users'}</td><td>${getLanguageName(p.language)}</td><td>${p.status}</td></tr>`;
       });
       tableHtml += "</tbody></table>";
 
@@ -226,6 +239,10 @@ export function PollList() {
               </Button>
             )
         },
+        cell: ({ row }) => {
+            const displayValue = getLanguageName(row.getValue("language"));
+            return <div className="text-gray-600 font-medium">{displayValue}</div>;
+        }
       },
       {
         accessorKey: "status",
@@ -304,7 +321,7 @@ export function PollList() {
         },
       },
     ],
-    [toggleStatus]
+    [toggleStatus, getLanguageName]
   )
 
   return (
