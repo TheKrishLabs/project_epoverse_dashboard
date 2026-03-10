@@ -90,6 +90,13 @@ export const createColumns = (onEdit: (ad: Advertisement) => void, onDeleted: ()
   {
     accessorKey: "language",
     header: "Language",
+    cell: ({ row }) => {
+      const lang = row.getValue("language") as unknown;
+      if (typeof lang === 'object' && lang !== null && 'name' in lang) {
+        return <span>{(lang as { name: string }).name}</span>;
+      }
+      return <span>{String(lang)}</span>;
+    }
   },
   {
     accessorKey: "embedCode",

@@ -15,51 +15,40 @@ export interface Advertisement {
   createdAt?: string;
 }
 
-interface ApiResponse<T> {
-  data: T;
-  advertisements?: T;
-}
-
 export const advertisementService = {
   getAds: async (): Promise<Advertisement[]> => {
     try {
-      const response = await api.get<ApiResponse<Advertisement[]> | Advertisement[]>('/advertisement');
-      
-      const payload = response as unknown as ApiResponse<Advertisement[]>;
-      const data = (payload && typeof payload === 'object' && 'data' in payload) ? payload.data : payload;
-      
-      if (Array.isArray(data)) return data;
-      
-      if (payload && typeof payload === 'object' && 'advertisements' in payload) {
-        const ads = (payload as { advertisements: Advertisement[] }).advertisements;
-        if (Array.isArray(ads)) return ads;
+      interface AdvertResponse {
+        data?: unknown;
+        ads?: Advertisement[];
+        advertisements?: Advertisement[];
       }
       
-      // Fallback mock data if API is empty/not ready
-      return [
-        {
-          _id: "1",
-          theme: "Classic",
-          page: "home",
-          position: 1,
-          adType: "image",
-          language: "Bengali/Bangla",
-          embedCode: "https://newspaper-script.com/demo/newspaper365-laravel/public/uploads/advertise/1730095817_ad_banner.png",
-          imageUrl: "https://newspaper-script.com/demo/newspaper365-laravel/public/uploads/advertise/1730095817_ad_banner.png",
-          status: "Active"
-        },
-        {
-          _id: "2",
-          theme: "Classic",
-          page: "home",
-          position: 2,
-          adType: "image",
-          language: "English",
-          embedCode: "https://newspaper-script.com/demo/newspaper365-laravel/public/uploads/advertise/1730095817_ad_banner.png",
-          imageUrl: "https://newspaper-script.com/demo/newspaper365-laravel/public/uploads/advertise/1730095817_ad_banner.png",
-          status: "Active"
+      // api.get in src/lib/axios.ts already unwraps response.data
+      const payload = await api.get<AdvertResponse>('/advertisement');
+      
+      // Handle various response structures
+      if (Array.isArray(payload)) return payload as Advertisement[];
+      
+      if (payload && typeof payload === 'object') {
+        if (Array.isArray(payload.ads)) return payload.ads;
+        if (Array.isArray(payload.data)) return payload.data as Advertisement[];
+        if (Array.isArray(payload.advertisements)) return payload.advertisements;
+        
+        const data = payload.data;
+        if (data && typeof data === 'object') {
+          if ('ads' in (data as Record<string, unknown>)) {
+            const ads = (data as AdvertResponse).ads;
+            if (Array.isArray(ads)) return ads as Advertisement[];
+          }
+          if ('advertisements' in (data as Record<string, unknown>)) {
+            const ads = (data as AdvertResponse).advertisements;
+            if (Array.isArray(ads)) return ads as Advertisement[];
+          }
         }
-      ];
+      }
+      
+      return [];
     } catch (error) {
       console.error("Failed to fetch advertisements", error);
       return [];
@@ -100,15 +89,15 @@ export const advertisementService = {
           }
         }
       });
-      return api.patch<Advertisement>(`/advertisements/${id}`, formData, {
+      return api.patch<Advertisement>(`/advertisement/${id}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
     }
-    return api.patch<Advertisement>(`/advertisements/${id}`, updates);
+    return api.patch<Advertisement>(`/advertisement/${id}`, updates);
   },
 
   deleteAd: async (id: string): Promise<boolean> => {
-    await api.delete(`/advertisements/${id}`);
+    await api.delete(`/advertisement/${id}`);
     return true;
   }
 };
