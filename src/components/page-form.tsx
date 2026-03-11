@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Loader2, ArrowLeft, X } from "lucide-react";
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { pageService, PageData } from "@/services/page-service";
@@ -20,9 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-
-const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
-import "react-quill-new/dist/quill.snow.css";
+import { TiptapEditor } from "@/components/ui/editor";
 
 interface PageFormProps {
     initialData?: PageData;
@@ -54,7 +51,13 @@ export function PageForm({ initialData, isEditing = false }: PageFormProps) {
     }, []);
 
     // Form State
-    const [language, setLanguage] = useState(initialData?.language || "");
+    const [language, setLanguage] = useState(() => {
+        if (!initialData?.language) return "";
+        if (typeof initialData.language === 'object' && '_id' in initialData.language) {
+            return (initialData.language as { _id: string })._id;
+        }
+        return initialData.language as string;
+    });
     const [title, setTitle] = useState(initialData?.title || "");
     const [slug, setSlug] = useState(initialData?.slug || "");
     const [details, setDetails] = useState(initialData?.details || "");
@@ -65,11 +68,30 @@ export function PageForm({ initialData, isEditing = false }: PageFormProps) {
     const [videoUrl, setVideoUrl] = useState(initialData?.videoUrl || "");
     
     // SEO State
-    const [metaKeyword, setMetaKeyword] = useState(initialData?.metaKeyword || "");
+    const [metaKeywords, setMetaKeywords] = useState(initialData?.metaKeywords || "");
     const [metaDescription, setMetaDescription] = useState(initialData?.metaDescription || "");
     
     const [errors, setErrors] = useState<Record<string, boolean>>({});
     const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        if (initialData) {
+            setLanguage(() => {
+                if (!initialData.language) return "";
+                if (typeof initialData.language === 'object' && '_id' in initialData.language) {
+                    return (initialData.language as { _id: string })._id;
+                }
+                return initialData.language as string;
+            });
+            setTitle(initialData.title || "");
+            setSlug(initialData.slug || "");
+            setDetails(initialData.details || "");
+            setPhotoPreview(initialData.photo || null);
+            setVideoUrl(initialData.videoUrl || "");
+            setMetaKeywords(initialData.metaKeywords || "");
+            setMetaDescription(initialData.metaDescription || "");
+        }
+    }, [initialData]);
 
     // Auto-generate slug when title changes
     const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -139,12 +161,14 @@ export function PageForm({ initialData, isEditing = false }: PageFormProps) {
                 details,
                 photo: photoPreview || null,
                 videoUrl,
-                metaKeyword,
+                metaKeywords,
                 metaDescription,
             };
 
-            if (isEditing && initialData?.id) {
-                await pageService.updatePage(initialData.id, serviceData);
+            const pageId = initialData?.id || initialData?._id;
+
+            if (isEditing && pageId) {
+                await pageService.updatePage(pageId, serviceData);
                 alert("Page updated successfully!");
             } else {
                  await pageService.createPage(serviceData);
@@ -188,7 +212,7 @@ export function PageForm({ initialData, isEditing = false }: PageFormProps) {
                                 <SelectItem value="error" disabled>Failed to load languages</SelectItem>
                             ) : languages.length > 0 ? (
                                 languages.map((lang) => (
-                                    <SelectItem key={lang._id} value={lang.name}>
+                                    <SelectItem key={lang._id} value={lang._id}>
                                         {lang.name}
                                     </SelectItem>
                                 ))
@@ -247,15 +271,15 @@ export function PageForm({ initialData, isEditing = false }: PageFormProps) {
 
             <div className="space-y-2">
                 <Label>Details</Label>
-                <div className="h-64 pb-12 rounded-md border">
-                    <ReactQuill theme="snow" value={details} onChange={setDetails} className="h-full" />
+                <div className="rounded-md border border-input bg-background w-full">
+                    <TiptapEditor content={details} onChange={setDetails} />
                 </div>
             </div>
 
             <div className="space-y-6 pt-4">
                 <div className="space-y-2">
-                    <Label>Meta keyword</Label>
-                    <Input placeholder="Meta keyword" value={metaKeyword} onChange={(e) => setMetaKeyword(e.target.value)} />
+                    <Label>Meta keywords</Label>
+                    <Input placeholder="Meta keywords" value={metaKeywords} onChange={(e) => setMetaKeywords(e.target.value)} />
                 </div>
 
                 <div className="space-y-2">

@@ -178,7 +178,7 @@ export const sidebarNav: SidebarNavGroup[] = [
       },
       {
         title: "Menu",
-        href: "/menu",
+        href: "/menus",
         icon: Gift,
         variant: "ghost",
       },

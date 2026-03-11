@@ -272,49 +272,32 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
             // Convert tags/keywords to arrays safely
             const keywordList = seo.keyword.split(',').map((s: string) => s.trim()).filter((s: string) => s.length > 0);
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            let payload: any;
-
+            const formData = new FormData();
+            formData.append("headline", headLine);
+            formData.append("shortDescription", shortHead);
+            formData.append("content", content);
+            formData.append("category", category);
+            formData.append("language", language);
+            formData.append("slug", generatedSlug);
+            formData.append("status", settings.publish ? "published" : "draft");
+            
             if (imageFile) {
-                // Send as multipart/form-data
-                const formData = new FormData();
-                formData.append("headline", headLine);
-                formData.append("shortDescription", shortHead);
-                formData.append("content", content);
-                formData.append("category", category);
-                formData.append("language", language);
-                formData.append("slug", generatedSlug);
-                formData.append("status", settings.publish ? "published" : "draft");
                 formData.append("image", imageFile);
-                if (seo.title) formData.append("imageAlt", seo.title);
-                
-                keywordList.forEach((k: string) => {
-                    formData.append("tags", k);
-                    formData.append("metaKeywords", k);
-                });
-                
-                if (seo.description) formData.append("metaDescription", seo.description);
-                formData.append("isLatest", String(settings.latest));
-                
-                payload = formData;
-            } else {
-                // Map form data strictly to Add Article API requirements
-                payload = {
-                    headline: headLine, 
-                    shortDescription: shortHead, 
-                    content: content,
-                    category: category,
-                    language: language,
-                    slug: generatedSlug,
-                    status: settings.publish ? "published" : "draft",
-                    image: imagePreviewUrl as string, 
-                    imageAlt: seo.title || "featured image", 
-                    tags: keywordList, 
-                    metaKeywords: keywordList,
-                    metaDescription: seo.description,
-                    isLatest: settings.latest
-                };
+            } else if (imagePreviewUrl) {
+                formData.append("image", imagePreviewUrl);
             }
+
+            if (seo.title) formData.append("imageAlt", seo.title);
+            
+            keywordList.forEach((k: string) => {
+                formData.append("tags", k);
+                formData.append("metaKeywords", k);
+            });
+            
+            if (seo.description) formData.append("metaDescription", seo.description);
+            formData.append("isLatest", String(settings.latest));
+            
+            const payload = formData;
 
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const origData: any = initialData;
