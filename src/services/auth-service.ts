@@ -9,6 +9,7 @@ export interface User {
   name?: string; // Kept for compatibility with other components
   role?: string;
   avatar?: string;
+  accessToken?: string;
 }
 
 export interface AuthResponse {
@@ -43,7 +44,11 @@ export const authService = {
       const responseData = data as Record<string, unknown>;
       const nestedData = responseData.data as Record<string, unknown> | undefined;
       const nestedToken = (nestedData?.accessToken || nestedData?.token) as string | undefined;
-      const tokenToStore = data.accessToken || data.token || nestedToken;
+      
+      // Extract from data.user.accessToken as specifically requested
+      const userToken = data.user?.accessToken;
+      
+      const tokenToStore = userToken || data.accessToken || data.token || nestedToken;
       
       // If no token but we have user data, we might generate a dummy one or check headers?
       // For now, let's assume if data.email exists, it's a success.
@@ -62,7 +67,7 @@ export const authService = {
       // Store User Data
       // Map 'fullName' to 'name' for compatibility
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const userData = (data.user || data) as Record<string, any>;
+      const userData = ((data.user as any)?.user || data.user || data) as Record<string, any>;
       const userToStore: User = {
           email: userData.email || '',
           name: userData.fullName || userData.name || userData.email?.split('@')[0] || 'User',
@@ -71,6 +76,7 @@ export const authService = {
           ...userData
       };
       
+      console.log("Saving user to localStorage:", userToStore);
       localStorage.setItem("user", JSON.stringify(userToStore));
 
       return data;
