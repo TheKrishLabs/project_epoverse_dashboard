@@ -24,7 +24,12 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 
-import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import dynamic from "next/dynamic";
+
+const CKEditorComponent = dynamic(() => import("@/components/ui/ck-editor"), { 
+    ssr: false,
+    loading: () => <div className="h-[400px] w-full bg-gray-100 animate-pulse rounded-md" />
+});
 
 interface PostData {
     id?: string;
@@ -177,19 +182,26 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
         return typeof catData === 'object' && catData ? catData._id : (catData || "");
     });
     // const [subCategory, setSubCategory] = useState(initialData?.subCategory || "");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [headLine, setHeadLine] = useState(initialData?.headLine || (initialData as any)?.headline || (initialData as any)?.title || "");
-    const [shortHead, setShortHead] = useState(initialData?.shortHead || "");
+    const [headLine, setHeadLine] = useState(() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const d = initialData as any;
+        return d?.headline || d?.headLine || d?.title || "";
+    });
+    const [shortHead, setShortHead] = useState(() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const d = initialData as any;
+        return d?.shortDescription || d?.shortHead || d?.shortInfo || "";
+    });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [reporter, setReporter] = useState(initialData?.reporter || (initialData as any)?.postBy || "");
 
     useEffect(() => {
-        // Fetch the logged-in user to display as the Content Writer
+        // Fetch the logged-in user to display as the Content Writer ONLY if reporter is empty (usually for new posts)
         const user = authService.getUser();
-        if (user && (user.name || user.fullName)) {
+        if (!reporter && user && (user.name || user.fullName)) {
             setReporter(user.fullName || user.name || "Current User");
         }
-    }, []);
+    }, [reporter]);
     
     // SEO & Settings State
     const [settings, setSettings] = useState(initialData?.settings || {
@@ -201,15 +213,23 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
         publish: (initialData as any)?.status === "Publish" || (initialData as any)?.status === "published",
     });
     const [seo, setSeo] = useState(initialData?.seo || {
-        customUrl: "",
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        customUrl: (initialData as any)?.slug || "",
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         title: (initialData as any)?.seoTitle || "",
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         keyword: (initialData as any)?.seoKeywords || "",
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        description: (initialData as any)?.seoDescription || "",
+        description: (initialData as any)?.seoDescription || (initialData as any)?.metaDescription || "",
         reference: ""
     });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [imageAlt, setImageAlt] = useState((initialData as any)?.imageAlt || "");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [imageTitle, setImageTitle] = useState((initialData as any)?.imageTitle || "");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [thumbnail, setThumbnail] = useState((initialData as any)?.thumbnail || "");
 
     const [errors, setErrors] = useState<Record<string, boolean>>({});
 
@@ -262,12 +282,23 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
         setIsSaving(true);
 
         try {
-            // Generate a slug from the headline
-            const baseSlug = seo.customUrl || headLine
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, '-')
-                .replace(/(^-|-$)+/g, '');
-            const generatedSlug = `${baseSlug}-${Math.random().toString(36).substring(2, 8)}`;
+            // Generate a slug from the headline if not editing or custom slug provided
+            let generatedSlug = "";
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const origData: any = initialData;
+            
+            if (isEditing && (origData?.slug)) {
+                // If editing and we have a slug, keep it unless customUrl is explicitly changed
+                generatedSlug = seo.customUrl || origData.slug;
+            } else {
+                const baseSlug = seo.customUrl || headLine
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/(^-|-$)+/g, '');
+                
+                // Add random suffix only for new posts to avoid collisions
+                generatedSlug = `${baseSlug}-${Math.random().toString(36).substring(2, 8)}`;
+            }
 
             // Convert tags/keywords to arrays safely
             const keywordList = seo.keyword.split(',').map((s: string) => s.trim()).filter((s: string) => s.length > 0);
@@ -287,26 +318,27 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
                 formData.append("image", imagePreviewUrl);
             }
 
-            if (seo.title) formData.append("imageAlt", seo.title);
-            
-            keywordList.forEach((k: string) => {
-                formData.append("tags", k);
-                formData.append("metaKeywords", k);
-            });
+            if (imageAlt) formData.append("imageAlt", imageAlt);
+            if (imageTitle) formData.append("imageTitle", imageTitle);
+            if (thumbnail) formData.append("thumbnail", thumbnail);
             
             if (seo.description) formData.append("metaDescription", seo.description);
             formData.append("isLatest", String(settings.latest));
-            
-            const payload = formData;
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const origData: any = initialData;
+            // Tags and Meta Keywords
+            if (keywordList.length > 0) {
+                keywordList.forEach((k: string) => {
+                    formData.append("tags", k);
+                    formData.append("metaKeywords", k);
+                });
+            }
+
             if (isEditing && (origData?.id || origData?._id)) {
                 const updateId = origData.id || origData._id;
-                await import("@/services/post-service").then(mod => mod.postService.updateArticle(updateId, payload));
+                await postService.updateArticle(updateId, formData);
                 alert("Article updated successfully!");
             } else {
-                 await import("@/services/post-service").then(mod => mod.postService.createArticle(payload));
+                 await postService.createArticle(formData);
                  alert("Article saved successfully!");
             }
              router.push("/post/list");
@@ -474,14 +506,22 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
             {/* Details Section */}
             <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                    <Label>Details</Label>
-                    <Button variant="outline" size="sm" className="h-8">
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        AI Writer
+                    <Label className={cn(errors.content && "text-red-500")}>
+                        Details <span className="text-red-500">*</span>
+                    </Label>
+                    <Button
+                        type="button"
+                        size="sm"
+                        className="h-8 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm gap-1.5"
+                    >
+                        <Sparkles className="h-3.5 w-3.5" />
+                        Ai Writer
                     </Button>
                 </div>
-                <div className="h-[400px] sm:h-96 pb-12 mb-20"> {/* Extended height for rich editor */}
-                    <RichTextEditor value={content} onChange={handleContentChange} />
+                {errors.content && <span className="text-xs text-red-500">Required</span>}
+                {/* CKEditor with Source, Image, Table, HTML/CSS support */}
+                <div className="pb-2 mb-16">
+                    <CKEditorComponent value={content} onChange={handleContentChange} />
                 </div>
             </div>
 
@@ -558,6 +598,14 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
                     {/* Other Media Options */}
                     <div className="space-y-4">
                         <div className="space-y-2">
+                            <Label>Thumbnail URL (Optional)</Label>
+                            <Input 
+                                placeholder="https://example.com/thumb.jpg" 
+                                value={thumbnail}
+                                onChange={(e) => setThumbnail(e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
                             <Label>Video URL</Label>
                             <Input placeholder="https://youtube.com/..." />
                         </div>
@@ -566,11 +614,19 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
                 <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
                         <Label>Image Alt</Label>
-                        <Input placeholder="Alt text" />
+                        <Input 
+                            placeholder="Alt text" 
+                            value={imageAlt}
+                            onChange={(e) => setImageAlt(e.target.value)}
+                        />
                     </div>
                     <div className="space-y-2">
                         <Label>Image Title</Label>
-                        <Input placeholder="Image title" />
+                        <Input 
+                            placeholder="Image title" 
+                            value={imageTitle}
+                            onChange={(e) => setImageTitle(e.target.value)}
+                        />
                     </div>
                 </div>
             </div>

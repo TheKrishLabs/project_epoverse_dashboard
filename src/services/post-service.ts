@@ -7,6 +7,7 @@ export type { PostData };
 export interface Category {
     _id: string;
     name: string;
+    description?: string;
     slug?: string;
     status?: string;
 }
@@ -15,14 +16,22 @@ export interface Article {
     _id: string;
     title?: string;
     headline?: string;
+    shortDescription?: string;
     content: string;
     // They could be returned as nested populated objects or just ID strings
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     category?: any;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     language?: any;
+    slug?: string;
     featuredImage?: string;
     image?: string;
+    thumbnail?: string;
+    imageAlt?: string;
+    tags?: string[];
+    metaKeywords?: string[];
+    metaDescription?: string;
+    isLatest?: boolean;
     status?: string;
     createdAt?: string;
     updatedAt?: string;
@@ -82,6 +91,7 @@ export const postService = {
         if (Array.isArray(response)) return response;
         if (response && Array.isArray(response.data)) return response.data;
         if (response && Array.isArray(response.articles)) return response.articles;
+        if (response && response.data && Array.isArray(response.data.articles)) return response.data.articles;
         return [];
       } catch (error) {
         console.error("Failed to fetch articles", error);
@@ -121,8 +131,9 @@ export const postService = {
     try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const response: any = await api.get(`/articles/${id}`);
-        if (response && response.article) return response.article;
-        return response;
+        const data = response?.data?.article || response?.article || response?.data || response;
+        if (data && typeof data === 'object' && (data._id || data.id)) return data;
+        return data;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
         if (error.response && error.response.status === 404) {
@@ -181,10 +192,22 @@ export const postService = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   updateArticle: async (id: string, payload: any): Promise<any> => {
     try {
-        return await api.put(`/articles/${id}`, payload);
+        console.log(`Updating article ${id} with payload:`, payload);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const response: any = await api.put(`/articles/${id}`, payload);
+        console.log(`Update Article (${id}) Response:`, response);
+        
+        // Handle various response wrappers
+        const data = response?.data?.article || response?.article || response?.data || response;
+        
+        if (data && typeof data === 'object' && (data._id || data.id)) {
+            return data;
+        }
+        return data;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-         if (error.response && error.response.status === 404) {
+        console.error(`Failed to update article ${id}:`, error);
+        if (error.response && error.response.status === 404) {
             return null;
         }
         throw error;
@@ -262,6 +285,28 @@ export const postService = {
     } catch (error) {
        console.error("Failed to upload bulk articles:", error);
        throw error;
+    }
+  },
+
+  getArticlesByCategory: async (categoryId: string): Promise<Article[]> => {
+    try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const response: any = await api.get(`/articles/fetch-by-category/${categoryId}`);
+        console.log(`Raw Articles by Category (${categoryId}) Response:`, response);
+        
+        if (Array.isArray(response)) return response;
+        if (response && typeof response === 'object') {
+            if (Array.isArray(response.data)) return response.data;
+            if (Array.isArray(response.articles)) return response.articles;
+            
+            // Fallback: find first array
+            const firstArray = Object.values(response).find(val => Array.isArray(val));
+            if (firstArray) return firstArray as Article[];
+        }
+        return [];
+    } catch (error) {
+        console.error(`Failed to fetch articles for category ${categoryId}`, error);
+        throw error;
     }
   }
 };

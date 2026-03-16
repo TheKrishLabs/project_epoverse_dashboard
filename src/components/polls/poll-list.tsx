@@ -41,27 +41,8 @@ export function PollList() {
          languageService.getLanguages()
       ])
       
-      // Mock data just for seeing if the implementation works while API is down
-      const actualPolls = pollsData && pollsData.length > 0 ? pollsData : [
-          {
-              id: "mock1",
-              language: "English",
-              question: "What is your favorite color?",
-              options: [{ text: "Red", votes: 12 }, { text: "Blue", votes: 19 }],
-              votePermission: "all" as const,
-              status: "Active" as const,
-          },
-          {
-              id: "mock2",
-              language: "Spanish",
-              question: "¿Cuál es tu comida favorita?",
-              options: [{ text: "Tacos", votes: 45 }, { text: "Pizza", votes: 34 }],
-              votePermission: "registered" as const,
-              status: "Inactive" as const,
-          }
-      ];
-
-      setPolls(actualPolls)
+      console.log("DEBUG: Polls Data Received:", pollsData);
+      setPolls(pollsData || [])
       setLanguages(langData || [])
     } catch (err: unknown) {
       if (err instanceof Error) {

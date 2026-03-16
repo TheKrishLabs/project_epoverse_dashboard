@@ -22,18 +22,42 @@ export interface PollData {
 export const pollService = {
   getPolls: async (): Promise<PollData[]> => {
     try {
-      return await api.get<PollData[]>('/polls');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const response = await api.get<any>('/polls');
+      console.log("Raw Polls Response:", response);
+      
+      // Handle wrappers like { success: true, polls: [...], data: [...] }
+      if (Array.isArray(response)) return response;
+      if (response && typeof response === 'object') {
+          // Check for data or polls key first
+          if (Array.isArray(response.data)) return response.data;
+          if (Array.isArray(response.polls)) return response.polls;
+          if (Array.isArray(response.items)) return response.items;
+          
+          // Fallback: find the first array property
+          const firstArray = Object.values(response).find(val => Array.isArray(val));
+          if (firstArray) return firstArray as PollData[];
+      }
+      
+      return [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch(error: any) {
-        // Mock fallback if you need to build without API ready yet, according to "Implement mock API (replaceable with real API later)" Requirement
-        console.warn("API might not exist. Falling back to empty array.", error);
+        console.warn("API failed. Falling back to empty array.", error);
         return [];
     }
   },
 
   getPollById: async (id: string): Promise<PollData | undefined> => {
     try {
-        return await api.get<PollData>(`/polls/${id}`);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const response = await api.get<any>(`/polls/${id}`);
+        // Handle wrappers like { success: true, data: { ... }, poll: { ... } }
+        const data = response?.data || response?.poll || response;
+        
+        if (data && typeof data === 'object' && (data._id || data.id || data.question)) {
+            return data as PollData;
+        }
+        return undefined;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
         if (error.response && error.response.status === 404) {
@@ -44,13 +68,23 @@ export const pollService = {
   },
 
   createPoll: async (poll: Partial<PollData>): Promise<PollData> => {
-    // If mocking is required, you can wrap this block logic, but usually we just pipe to API
-    return api.post<PollData>('/polls', poll);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const response = await api.post<any>('/polls', poll);
+    console.log("Create Poll Response:", response);
+    return response?.data || response?.poll || response;
   },
 
   updatePoll: async (id: string, updates: Partial<PollData>): Promise<PollData | null> => {
     try {
-        return await api.patch<PollData>(`/polls/${id}`, updates);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const response = await api.patch<any>(`/polls/${id}`, updates);
+        console.log("Update Poll Response:", response);
+        const data = response?.data || response?.poll || response;
+        
+        if (data && typeof data === 'object' && (data._id || data.id || data.question)) {
+            return data as PollData;
+        }
+        return data;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
          if (error.response && error.response.status === 404) {

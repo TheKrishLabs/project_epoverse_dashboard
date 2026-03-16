@@ -48,7 +48,9 @@ export function OpinionList() {
          opinionService.getAllOpinions(),
          languageService.getLanguages()
       ])
-      setOpinions(opinionsResponse?.data || [])
+      console.log("DEBUG: Opinions Component Data:", opinionsResponse);
+      const opinionsData = opinionsResponse?.data || [];
+      setOpinions(Array.isArray(opinionsData) ? opinionsData : []);
       setLanguages(langData || [])
     } catch (err: unknown) {
       if (err instanceof Error) {
