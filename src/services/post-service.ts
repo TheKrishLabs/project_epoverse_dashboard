@@ -91,6 +91,7 @@ export const postService = {
         if (Array.isArray(response)) return response;
         if (response && Array.isArray(response.data)) return response.data;
         if (response && Array.isArray(response.articles)) return response.articles;
+        if (response && response.data && Array.isArray(response.data.articles)) return response.data.articles;
         return [];
       } catch (error) {
         console.error("Failed to fetch articles", error);
@@ -130,8 +131,9 @@ export const postService = {
     try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const response: any = await api.get(`/articles/${id}`);
-        if (response && response.article) return response.article;
-        return response;
+        const data = response?.data?.article || response?.article || response?.data || response;
+        if (data && typeof data === 'object' && (data._id || data.id)) return data;
+        return data;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
         if (error.response && error.response.status === 404) {
@@ -196,7 +198,7 @@ export const postService = {
         console.log(`Update Article (${id}) Response:`, response);
         
         // Handle various response wrappers
-        const data = response?.data || response?.article || response;
+        const data = response?.data?.article || response?.article || response?.data || response;
         
         if (data && typeof data === 'object' && (data._id || data.id)) {
             return data;

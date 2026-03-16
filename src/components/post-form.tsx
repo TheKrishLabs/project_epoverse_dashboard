@@ -191,12 +191,12 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
     const [reporter, setReporter] = useState(initialData?.reporter || (initialData as any)?.postBy || "");
 
     useEffect(() => {
-        // Fetch the logged-in user to display as the Content Writer
+        // Fetch the logged-in user to display as the Content Writer ONLY if reporter is empty (usually for new posts)
         const user = authService.getUser();
-        if (user && (user.name || user.fullName)) {
+        if (!reporter && user && (user.name || user.fullName)) {
             setReporter(user.fullName || user.name || "Current User");
         }
-    }, []);
+    }, [reporter]);
     
     // SEO & Settings State
     const [settings, setSettings] = useState(initialData?.settings || {

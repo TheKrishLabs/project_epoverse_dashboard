@@ -110,7 +110,8 @@ export const columns: ColumnDef<Article>[] = [
     header: "Action",
     cell: ({ row }) => {
       const article = row.original;
-      const id = article._id;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const id = article._id || (article as any).id;
 
       return (
         <div className="flex items-center gap-2">
