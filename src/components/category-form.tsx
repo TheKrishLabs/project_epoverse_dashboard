@@ -29,7 +29,7 @@ export function CategoryForm({ initialData, isEditing = false }: CategoryFormPro
     // Form State
     const [name, setName] = useState(initialData?.name || "");
     const [slug, setSlug] = useState(initialData?.slug || "");
-    const [description, setDescription] = useState(""); // Currently not in API type but useful feature
+    const [description, setDescription] = useState(initialData?.description || "");
     const [status, setStatus] = useState(initialData?.status || "Active");
     
     const [errors, setErrors] = useState<Record<string, boolean>>({});

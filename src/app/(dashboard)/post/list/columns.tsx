@@ -26,7 +26,8 @@ export const columns: ColumnDef<Article>[] = [
     },
   },
   {
-    accessorFn: (row) => row.headline || row.title,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    accessorFn: (row) => row.headline || row.title || (row as any).headLine,
     id: "title",
     header: ({ column }) => {
       return (

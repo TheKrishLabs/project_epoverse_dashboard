@@ -22,6 +22,7 @@ export function MenuList() {
     setError(null)
     try {
       const data = await menuService.getMenus()
+      console.log("DEBUG: Menus Component Data:", data);
       setMenus(data || [])
     } catch (err: unknown) {
       if (err instanceof Error) {

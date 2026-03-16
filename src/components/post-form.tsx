@@ -177,9 +177,16 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
         return typeof catData === 'object' && catData ? catData._id : (catData || "");
     });
     // const [subCategory, setSubCategory] = useState(initialData?.subCategory || "");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [headLine, setHeadLine] = useState(initialData?.headLine || (initialData as any)?.headline || (initialData as any)?.title || "");
-    const [shortHead, setShortHead] = useState(initialData?.shortHead || "");
+    const [headLine, setHeadLine] = useState(() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const d = initialData as any;
+        return d?.headline || d?.headLine || d?.title || "";
+    });
+    const [shortHead, setShortHead] = useState(() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const d = initialData as any;
+        return d?.shortDescription || d?.shortHead || d?.shortInfo || "";
+    });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [reporter, setReporter] = useState(initialData?.reporter || (initialData as any)?.postBy || "");
 
@@ -201,15 +208,23 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
         publish: (initialData as any)?.status === "Publish" || (initialData as any)?.status === "published",
     });
     const [seo, setSeo] = useState(initialData?.seo || {
-        customUrl: "",
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        customUrl: (initialData as any)?.slug || "",
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         title: (initialData as any)?.seoTitle || "",
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         keyword: (initialData as any)?.seoKeywords || "",
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        description: (initialData as any)?.seoDescription || "",
+        description: (initialData as any)?.seoDescription || (initialData as any)?.metaDescription || "",
         reference: ""
     });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [imageAlt, setImageAlt] = useState((initialData as any)?.imageAlt || "");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [imageTitle, setImageTitle] = useState((initialData as any)?.imageTitle || "");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [thumbnail, setThumbnail] = useState((initialData as any)?.thumbnail || "");
 
     const [errors, setErrors] = useState<Record<string, boolean>>({});
 
@@ -262,12 +277,23 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
         setIsSaving(true);
 
         try {
-            // Generate a slug from the headline
-            const baseSlug = seo.customUrl || headLine
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, '-')
-                .replace(/(^-|-$)+/g, '');
-            const generatedSlug = `${baseSlug}-${Math.random().toString(36).substring(2, 8)}`;
+            // Generate a slug from the headline if not editing or custom slug provided
+            let generatedSlug = "";
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const origData: any = initialData;
+            
+            if (isEditing && (origData?.slug)) {
+                // If editing and we have a slug, keep it unless customUrl is explicitly changed
+                generatedSlug = seo.customUrl || origData.slug;
+            } else {
+                const baseSlug = seo.customUrl || headLine
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/(^-|-$)+/g, '');
+                
+                // Add random suffix only for new posts to avoid collisions
+                generatedSlug = `${baseSlug}-${Math.random().toString(36).substring(2, 8)}`;
+            }
 
             // Convert tags/keywords to arrays safely
             const keywordList = seo.keyword.split(',').map((s: string) => s.trim()).filter((s: string) => s.length > 0);
@@ -287,26 +313,27 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
                 formData.append("image", imagePreviewUrl);
             }
 
-            if (seo.title) formData.append("imageAlt", seo.title);
-            
-            keywordList.forEach((k: string) => {
-                formData.append("tags", k);
-                formData.append("metaKeywords", k);
-            });
+            if (imageAlt) formData.append("imageAlt", imageAlt);
+            if (imageTitle) formData.append("imageTitle", imageTitle);
+            if (thumbnail) formData.append("thumbnail", thumbnail);
             
             if (seo.description) formData.append("metaDescription", seo.description);
             formData.append("isLatest", String(settings.latest));
-            
-            const payload = formData;
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const origData: any = initialData;
+            // Tags and Meta Keywords
+            if (keywordList.length > 0) {
+                keywordList.forEach((k: string) => {
+                    formData.append("tags", k);
+                    formData.append("metaKeywords", k);
+                });
+            }
+
             if (isEditing && (origData?.id || origData?._id)) {
                 const updateId = origData.id || origData._id;
-                await import("@/services/post-service").then(mod => mod.postService.updateArticle(updateId, payload));
+                await postService.updateArticle(updateId, formData);
                 alert("Article updated successfully!");
             } else {
-                 await import("@/services/post-service").then(mod => mod.postService.createArticle(payload));
+                 await postService.createArticle(formData);
                  alert("Article saved successfully!");
             }
              router.push("/post/list");
@@ -558,6 +585,14 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
                     {/* Other Media Options */}
                     <div className="space-y-4">
                         <div className="space-y-2">
+                            <Label>Thumbnail URL (Optional)</Label>
+                            <Input 
+                                placeholder="https://example.com/thumb.jpg" 
+                                value={thumbnail}
+                                onChange={(e) => setThumbnail(e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
                             <Label>Video URL</Label>
                             <Input placeholder="https://youtube.com/..." />
                         </div>
@@ -566,11 +601,19 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
                 <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
                         <Label>Image Alt</Label>
-                        <Input placeholder="Alt text" />
+                        <Input 
+                            placeholder="Alt text" 
+                            value={imageAlt}
+                            onChange={(e) => setImageAlt(e.target.value)}
+                        />
                     </div>
                     <div className="space-y-2">
                         <Label>Image Title</Label>
-                        <Input placeholder="Image title" />
+                        <Input 
+                            placeholder="Image title" 
+                            value={imageTitle}
+                            onChange={(e) => setImageTitle(e.target.value)}
+                        />
                     </div>
                 </div>
             </div>

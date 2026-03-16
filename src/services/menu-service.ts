@@ -23,34 +23,33 @@ export interface MenuItem {
   parentId?: string;
 }
 
-// Temporary mock data to fulfill UI requirements before actual backend integration
-const mockMenuData: MenuData[] = [
-  { id: "menu1", name: "Main Menu", status: "Publish" },
-  { id: "menu2", name: "Footer Category", status: "Publish" },
-  { id: "menu3", name: "Footer Menu", status: "Publish" },
-  { id: "menu4", name: "Footer Page", status: "Draft" },
-];
+// Mock data removed to ensure real API data is prioritized and displayed.
 
 const STORAGE_KEY_PREFIX = 'mock_menu_items_';
 
 export const menuService = {
   getMenus: async (): Promise<MenuData[]> => {
     try {
-      // Attempt to hit the actual API if it exists
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response = await api.get<any>('/menus');
-      const data = response.data || response; // Handle both raw axios and intercepted returns
-
-      // If the API returns an empty array but we want to show the mock data for UI building purposes:
-      if (!data || !Array.isArray(data) || data.length === 0) {
-          return mockMenuData;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const response = await api.get<any>('/menus');
+      console.log("Raw Menus Response:", response);
+      
+      // Handle wrappers like { success: true, menus: [...], data: [...] }
+      if (Array.isArray(response)) return response;
+      if (response && typeof response === 'object') {
+          if (Array.isArray(response.data)) return response.data;
+          if (Array.isArray(response.menus)) return response.menus;
+          if (Array.isArray(response.items)) return response.items;
+          
+          // Fallback: find the first array property
+          const firstArray = Object.values(response).find(val => Array.isArray(val));
+          if (firstArray) return firstArray as MenuData[];
       }
-      return data as MenuData[];
+      return [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch(error: any) {
-        // Fallback to mock data if API doesn't exist yet (404 etc)
-        console.warn("API '/menus' might not exist or failed. Falling back to mock data.", error);
-        return mockMenuData;
+        console.warn("API '/menus' failed.", error);
+        return [];
     }
   },
 
@@ -58,11 +57,17 @@ export const menuService = {
     try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const response = await api.get<any>(`/menus/${id}`);
-        return (response.data || response) as MenuData;
+        // Handle wrappers like { success: true, data: { ... }, menu: { ... } }
+        const data = response?.data || response?.menu || response;
+        
+        if (data && typeof data === 'object' && (data._id || data.id || data.name)) {
+            return data as MenuData;
+        }
+        return undefined;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
         if (error.response?.status === 404) {
-            return mockMenuData.find(m => m.id === id || m._id === id);
+             return undefined;
         }
         throw error;
     }
@@ -99,14 +104,18 @@ export const menuService = {
     try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const response = await api.get<any>(`/menu-items/${menuId}`);
-        // Handle both raw axios and intercepted returns
-        const data = response.data || response;
-        if (Array.isArray(data)) {
-            // If the real API kicks online, we might want to clear old local mocks to stop priority blocking
-             if (typeof window !== 'undefined') localStorage.removeItem(STORAGE_KEY_PREFIX + menuId);
-             return data;
+        console.log("Raw Menu Items Response:", response);
+        
+        // Handle wrappers like { success: true, data: [...], items: [...] }
+        if (Array.isArray(response)) return response;
+        if (response && typeof response === 'object') {
+            if (Array.isArray(response.data)) return response.data;
+            if (Array.isArray(response.items)) return response.items;
+            
+            // Fallback: find first array
+            const firstArray = Object.values(response).find(val => Array.isArray(val));
+            if (firstArray) return firstArray as MenuItem[];
         }
-        if (data && Array.isArray(data.items)) return data.items;
         throw new Error("Invalid array return types.");
     } catch (error) {
         // Fallback to local storage for local development testing
