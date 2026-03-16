@@ -195,33 +195,35 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [reporter, setReporter] = useState(initialData?.reporter || (initialData as any)?.postBy || "");
 
-    useEffect(() => {
-        // Fetch the logged-in user to display as the Content Writer ONLY if reporter is empty (usually for new posts)
-        const user = authService.getUser();
-        if (!reporter && user && (user.name || user.fullName)) {
-            setReporter(user.fullName || user.name || "Current User");
-        }
-    }, [reporter]);
-    
     // SEO & Settings State
-    const [settings, setSettings] = useState(initialData?.settings || {
-        latest: false,
-        Trending: false,
-        // feature: false,
-        recommended: false,
+    const [settings, setSettings] = useState(() => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        publish: (initialData as any)?.status === "Publish" || (initialData as any)?.status === "published",
+        const d = initialData as any;
+        return {
+            latest: d?.isLatest || d?.settings?.latest || false,
+            Trending: d?.settings?.Trending || false,
+            recommended: d?.settings?.recommended || false,
+            publish: d?.status === "published" || d?.status === "Publish" || d?.settings?.publish || false,
+        };
     });
-    const [seo, setSeo] = useState(initialData?.seo || {
+    
+    const [seo, setSeo] = useState(() => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        customUrl: (initialData as any)?.slug || "",
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        title: (initialData as any)?.seoTitle || "",
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        keyword: (initialData as any)?.seoKeywords || "",
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        description: (initialData as any)?.seoDescription || (initialData as any)?.metaDescription || "",
-        reference: ""
+        const d = initialData as any;
+        
+        // Handle tags/keywords which could be arrays or comma-string
+        let keywords = d?.seoKeywords || d?.metaKeywords || d?.tags || "";
+        if (Array.isArray(keywords)) {
+            keywords = keywords.join(", ");
+        }
+
+        return {
+            customUrl: d?.slug || d?.seo?.customUrl || "",
+            title: d?.seoTitle || d?.seo?.title || "",
+            keyword: keywords,
+            description: d?.metaDescription || d?.seoDescription || d?.seo?.description || "",
+            reference: d?.seo?.reference || ""
+        };
     });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -324,7 +326,7 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
             
             if (seo.description) formData.append("metaDescription", seo.description);
             formData.append("isLatest", String(settings.latest));
-
+            
             // Tags and Meta Keywords
             if (keywordList.length > 0) {
                 keywordList.forEach((k: string) => {
