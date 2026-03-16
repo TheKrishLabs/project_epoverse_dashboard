@@ -24,7 +24,12 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 
-import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import dynamic from "next/dynamic";
+
+const CKEditorComponent = dynamic(() => import("@/components/ui/ck-editor"), { 
+    ssr: false,
+    loading: () => <div className="h-[400px] w-full bg-gray-100 animate-pulse rounded-md" />
+});
 
 interface PostData {
     id?: string;
@@ -501,14 +506,22 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
             {/* Details Section */}
             <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                    <Label>Details</Label>
-                    <Button variant="outline" size="sm" className="h-8">
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        AI Writer
+                    <Label className={cn(errors.content && "text-red-500")}>
+                        Details <span className="text-red-500">*</span>
+                    </Label>
+                    <Button
+                        type="button"
+                        size="sm"
+                        className="h-8 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm gap-1.5"
+                    >
+                        <Sparkles className="h-3.5 w-3.5" />
+                        Ai Writer
                     </Button>
                 </div>
-                <div className="h-[400px] sm:h-96 pb-12 mb-20"> {/* Extended height for rich editor */}
-                    <RichTextEditor value={content} onChange={handleContentChange} />
+                {errors.content && <span className="text-xs text-red-500">Required</span>}
+                {/* CKEditor with Source, Image, Table, HTML/CSS support */}
+                <div className="pb-2 mb-16">
+                    <CKEditorComponent value={content} onChange={handleContentChange} />
                 </div>
             </div>
 

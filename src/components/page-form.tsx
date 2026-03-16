@@ -19,7 +19,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { TiptapEditor } from "@/components/ui/editor";
+import dynamic from "next/dynamic";
+
+const CKEditorComponent = dynamic(() => import("@/components/ui/ck-editor"), { 
+    ssr: false,
+    loading: () => <div className="h-[400px] w-full bg-gray-100 animate-pulse rounded-md" />
+});
 
 interface PageFormProps {
     initialData?: PageData;
@@ -272,7 +277,7 @@ export function PageForm({ initialData, isEditing = false }: PageFormProps) {
             <div className="space-y-2">
                 <Label>Details</Label>
                 <div className="rounded-md border border-input bg-background w-full">
-                    <TiptapEditor content={details} onChange={setDetails} />
+                    <CKEditorComponent value={details} onChange={setDetails} />
                 </div>
             </div>
 
