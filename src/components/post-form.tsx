@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { postService, Category } from "@/services/post-service";
 import { languageService, Language } from "@/services/language-service";
+import { aiWriterService } from "@/services/ai-writer-service";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -257,10 +258,36 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
     }, []);
     
     const [isSaving, setIsSaving] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
 
     const handleSeoChange = useCallback((key: keyof typeof seo, value: string) => {
          setSeo(prev => ({ ...prev, [key]: value }));
     }, []);
+
+    const handleAiGenerate = async () => {
+        if (!headLine) {
+            alert("Please provide a Head Line to generate AI content.");
+            return;
+        }
+        setIsGenerating(true);
+        try {
+            const generatedText = await aiWriterService.generateContent(headLine);
+            let htmlContent = generatedText;
+            if (!generatedText.startsWith("<")) {
+                htmlContent = generatedText.split('\n\n').filter(p => p.trim()).map(p => `<p>${p.replace(/\n/g, '<br/>')}</p>`).join('');
+            }
+            if (!content || content.trim() === "") {
+                setContent(htmlContent);
+            } else {
+                setContent(content + htmlContent);
+            }
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : "Failed to generate AI content";
+            alert(msg);
+        } finally {
+            setIsGenerating(false);
+        }
+    };
 
     const handleSubmit = async () => {
         const newErrors: Record<string, boolean> = {};
@@ -513,10 +540,12 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
                     <Button
                         type="button"
                         size="sm"
+                        onClick={handleAiGenerate}
+                        disabled={isGenerating}
                         className="h-8 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm gap-1.5"
                     >
-                        <Sparkles className="h-3.5 w-3.5" />
-                        Ai Writer
+                        {isGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                        {isGenerating ? "Generating..." : "Ai Writer"}
                     </Button>
                 </div>
                 {errors.content && <span className="text-xs text-red-500">Required</span>}
