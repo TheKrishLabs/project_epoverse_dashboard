@@ -7,6 +7,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { postService, Category } from "@/services/post-service";
 import { languageService, Language } from "@/services/language-service";
+import { aiWriterService } from "@/services/ai-writer-service";
+import { authService, User } from "@/services/auth-service";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -114,8 +116,11 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
     const [isLoadingCategories, setIsLoadingCategories] = useState(true);
     const [isCategoryError, setIsCategoryError] = useState(false);
     
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
+
     // Fetch initial data
     useEffect(() => {
+        setCurrentUser(authService.getUser());
         const fetchData = async () => {
             setIsLoadingLanguages(true);
             setIsLanguageError(false);
@@ -200,7 +205,7 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
         const d = initialData as any;
         return {
             latest: d?.isLatest || d?.settings?.latest || false,
-            Trending: d?.settings?.Trending || false,
+            // Trending: d?.settings?.Trending || false,
             recommended: d?.settings?.recommended || false,
             publish: d?.status === "published" || d?.status === "Publish" || d?.settings?.publish || false,
         };
@@ -257,10 +262,36 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
     }, []);
     
     const [isSaving, setIsSaving] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
 
     const handleSeoChange = useCallback((key: keyof typeof seo, value: string) => {
          setSeo(prev => ({ ...prev, [key]: value }));
     }, []);
+
+    const handleAiGenerate = async () => {
+        if (!headLine) {
+            alert("Please provide a Head Line to generate AI content.");
+            return;
+        }
+        setIsGenerating(true);
+        try {
+            const generatedText = await aiWriterService.generateContent(headLine);
+            let htmlContent = generatedText;
+            if (!generatedText.startsWith("<")) {
+                htmlContent = generatedText.split('\n\n').filter(p => p.trim()).map(p => `<p>${p.replace(/\n/g, '<br/>')}</p>`).join('');
+            }
+            if (!content || content.trim() === "") {
+                setContent(htmlContent);
+            } else {
+                setContent(content + htmlContent);
+            }
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : "Failed to generate AI content";
+            alert(msg);
+        } finally {
+            setIsGenerating(false);
+        }
+    };
 
     const handleSubmit = async () => {
         const newErrors: Record<string, boolean> = {};
@@ -513,10 +544,12 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
                     <Button
                         type="button"
                         size="sm"
+                        onClick={handleAiGenerate}
+                        disabled={isGenerating}
                         className="h-8 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm gap-1.5"
                     >
-                        <Sparkles className="h-3.5 w-3.5" />
-                        Ai Writer
+                        {isGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                        {isGenerating ? "Generating..." : "Ai Writer"}
                     </Button>
                 </div>
                 {errors.content && <span className="text-xs text-red-500">Required</span>}
@@ -683,7 +716,7 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
             <div className="space-y-2">
                 <Label>Content Writer</Label>
                 <Input 
-                    value={reporter || "Current User"} // Fallback or rely on parent component mapping the logged-in user to initialData
+                    value={reporter || currentUser?.name || currentUser?.fullName || currentUser?.email || "Current User"} // Fallback or rely on parent component mapping the logged-in user to initialData
                     readOnly
                     className="bg-gray-50 text-gray-500 cursor-not-allowed"
                 />
@@ -700,7 +733,11 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
                                 checked={settings[key as keyof typeof settings]} 
                                 onCheckedChange={() => handleSettingChange(key as keyof typeof settings)}
                             />
-                            <Label htmlFor={key} className="capitalize">{key.replace(/([A-Z])/g, ' $1').trim()} {key === 'social' ? 'Post' : ''}</Label>
+                            <Label htmlFor={key} className="capitalize">
+                                {key === 'recommended' 
+                                    ? 'Save as Draft' 
+                                    : `${key.replace(/([A-Z])/g, ' $1').trim()}${key === 'social' ? ' Post' : ''}`}
+                            </Label>
                         </div>
                     ))}
                 </div>
