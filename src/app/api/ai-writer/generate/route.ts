@@ -18,11 +18,14 @@ export async function POST(req: NextRequest) {
     const genAI = new GoogleGenerativeAI(apiKey);
     const selectedModel = modelName || "gemini-2.5-flash";
 
+    const finalTemp = Number(temperature);
+    const finalTokens = Number(maxTokens);
+
     const model = genAI.getGenerativeModel({
       model: selectedModel,
       generationConfig: {
-        temperature: temperature ?? 0.4,
-        maxOutputTokens: maxTokens ?? 1000,
+        temperature: isNaN(finalTemp) ? 0.4 : finalTemp,
+        maxOutputTokens: isNaN(finalTokens) || finalTokens < 1000 ? 1000 : finalTokens,
       }
     });
 

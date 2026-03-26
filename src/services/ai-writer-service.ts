@@ -14,7 +14,7 @@ const defaultSettings: AiWriterSettings = {
   model: "gemini-2.5-flash",
   temperature: 0.4,
   maxTokens: 1000,
-  promptTemplate: "add article from url",
+  promptTemplate: "You are a professional english news writer and write a comprehensive article in english. Include a catchy headline, and the full article content in 300 words. Ensure the tone is neutral and journalistic. Write the news article based on the following headline:",
 };
 
 // Key to track local state for alert UI updates
