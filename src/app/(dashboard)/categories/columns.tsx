@@ -1,13 +1,13 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, Edit, Eye } from "lucide-react";
+import { ArrowUpDown, Edit, Eye, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { Category } from "@/services/post-service";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
-export const columns: ColumnDef<Category>[] = [
+export const getColumns = (onDelete: (id: string, name: string) => void): ColumnDef<Category>[] => [
   {
     accessorKey: "name",
     header: ({ column }) => {
@@ -69,9 +69,15 @@ export const columns: ColumnDef<Category>[] = [
               <Eye className="h-4 w-4" />
             </Button>
           </Link>
-          {/* <Button variant="ghost" size="icon" className="h-8 w-8 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 rounded-md dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40" title="Delete">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 rounded-md dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40" 
+            title="Delete"
+            onClick={() => onDelete(id, category.name)}
+          >
             <Trash2 className="h-4 w-4" />
-          </Button> */}
+          </Button>
         </div>
       );
     },

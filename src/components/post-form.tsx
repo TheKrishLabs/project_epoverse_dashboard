@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { postService, Category } from "@/services/post-service";
 import { languageService, Language } from "@/services/language-service";
 import { aiWriterService } from "@/services/ai-writer-service";
+import { authService, User } from "@/services/auth-service";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -115,8 +116,11 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
     const [isLoadingCategories, setIsLoadingCategories] = useState(true);
     const [isCategoryError, setIsCategoryError] = useState(false);
     
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
+
     // Fetch initial data
     useEffect(() => {
+        setCurrentUser(authService.getUser());
         const fetchData = async () => {
             setIsLoadingLanguages(true);
             setIsLanguageError(false);
@@ -201,7 +205,7 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
         const d = initialData as any;
         return {
             latest: d?.isLatest || d?.settings?.latest || false,
-            Trending: d?.settings?.Trending || false,
+            // Trending: d?.settings?.Trending || false,
             recommended: d?.settings?.recommended || false,
             publish: d?.status === "published" || d?.status === "Publish" || d?.settings?.publish || false,
         };
@@ -712,7 +716,7 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
             <div className="space-y-2">
                 <Label>Content Writer</Label>
                 <Input 
-                    value={reporter || "Current User"} // Fallback or rely on parent component mapping the logged-in user to initialData
+                    value={reporter || currentUser?.name || currentUser?.fullName || currentUser?.email || "Current User"} // Fallback or rely on parent component mapping the logged-in user to initialData
                     readOnly
                     className="bg-gray-50 text-gray-500 cursor-not-allowed"
                 />
@@ -729,7 +733,11 @@ export function PostForm({ initialData, isEditing = false }: PostFormProps) {
                                 checked={settings[key as keyof typeof settings]} 
                                 onCheckedChange={() => handleSettingChange(key as keyof typeof settings)}
                             />
-                            <Label htmlFor={key} className="capitalize">{key.replace(/([A-Z])/g, ' $1').trim()} {key === 'social' ? 'Post' : ''}</Label>
+                            <Label htmlFor={key} className="capitalize">
+                                {key === 'recommended' 
+                                    ? 'Save as Draft' 
+                                    : `${key.replace(/([A-Z])/g, ' $1').trim()}${key === 'social' ? ' Post' : ''}`}
+                            </Label>
                         </div>
                     ))}
                 </div>

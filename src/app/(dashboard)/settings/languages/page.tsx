@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useCallback } from "react"
-import { Loader2, Plus, RefreshCw } from "lucide-react"
+import { Loader2, Plus, RefreshCw, Trash2 } from "lucide-react"
 import { format } from "date-fns"
 
 import { Button } from "@/components/ui/button"
@@ -60,6 +60,17 @@ export default function LanguageListPage() {
     }
   }
 
+  const handleDelete = async (id: string, name: string) => {
+    if (!window.confirm(`Are you sure you want to delete the language "${name}"?`)) return;
+    try {
+      await languageService.deleteLanguage(id);
+      fetchLanguages();
+    } catch (err) {
+      console.error("Failed to delete language", err);
+      alert("Failed to delete language. Please try again.");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -102,6 +113,7 @@ export default function LanguageListPage() {
                     <TableHead>Description</TableHead>
                     <TableHead>Created At</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -116,6 +128,17 @@ export default function LanguageListPage() {
                           <Badge variant={language.isDeleted ? "destructive" : "default"} className={!language.isDeleted ? "bg-emerald-500 hover:bg-emerald-600" : ""}>
                               {language.isDeleted ? "Deleted" : "Active"}
                           </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                          <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => handleDelete(language._id, language.name)}
+                              title="Delete"
+                          >
+                              <Trash2 className="h-4 w-4" />
+                          </Button>
                       </TableCell>
                     </TableRow>
                   ))}

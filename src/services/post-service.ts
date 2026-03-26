@@ -80,6 +80,16 @@ export const postService = {
       }
   },
 
+  deleteCategory: async (id: string): Promise<boolean> => {
+      try {
+          await api.delete(`/categories/${id}`);
+          return true;
+      } catch (error) {
+          console.error(`Failed to delete category ${id}:`, error);
+          throw error;
+      }
+  },
+
   getPosts: async (): Promise<PostData[]> => {
     return api.get<PostData[]>('/posts');
   },

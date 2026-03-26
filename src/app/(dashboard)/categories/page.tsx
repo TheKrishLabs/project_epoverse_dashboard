@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Filter, Loader2, Plus, RefreshCw, Search, X } from "lucide-react";
 import Link from "next/link";
-import { columns } from "./columns";
+import { getColumns } from "./columns";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { postService, Category } from "@/services/post-service";
@@ -58,6 +58,19 @@ export default function CategoriesPage() {
     });
     setSearchQuery("");
   };
+
+  const handleDelete = useCallback(async (id: string, name: string) => {
+    if (!window.confirm(`Are you sure you want to delete the category "${name}"?`)) return;
+    try {
+      await postService.deleteCategory(id);
+      loadCategories();
+    } catch (err) {
+      console.error("Failed to delete category", err);
+      setError("Failed to delete category. Please try again.");
+    }
+  }, [loadCategories]);
+
+  const columns = useMemo(() => getColumns(handleDelete), [handleDelete]);
 
   const activeFiltersCount = [
     filters.status !== "all",
