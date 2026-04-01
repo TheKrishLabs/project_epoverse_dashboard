@@ -6,7 +6,9 @@ import {
     Users, 
     CheckCircle2, 
     Files,
-    Layers
+    Layers,
+    Clock,
+    FileCheck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DashboardResponse } from "@/services/dashboard-service";
@@ -37,7 +39,7 @@ export function DashboardStats({ dashboardData }: DashboardStatsProps) {
         {
             title: "Total Employees",
             value: summary?.totalEmployees || 0,
-            icon: CheckCircle2, // Using a distinct icon for employees
+            icon: CheckCircle2, 
             color: "text-green-600",
             bgColor: "bg-green-100 dark:bg-green-900/30",
         },
@@ -49,15 +51,29 @@ export function DashboardStats({ dashboardData }: DashboardStatsProps) {
             bgColor: "bg-slate-100 dark:bg-slate-800/50",
         },
         {
+            title: "Pending Articles",
+            value: summary?.totalPendingArticles || 0,
+            icon: Clock,
+            color: "text-amber-600",
+            bgColor: "bg-amber-100 dark:bg-amber-900/30",
+        },
+        {
+            title: "Approved Articles",
+            value: summary?.totalApprovedArticles || 0,
+            icon: FileCheck,
+            color: "text-cyan-600",
+            bgColor: "bg-cyan-100 dark:bg-cyan-900/30",
+        },
+        {
             title: "Total Categories",
-            value: (dashboardData.dashboard?.totalCategories as number) || 0,
+            value: summary?.totalCategory || 0,
             icon: Layers,
             color: "text-indigo-600",
             bgColor: "bg-indigo-100 dark:bg-indigo-900/30",
         },
         {
             title: "Total Languages",
-            value: (dashboardData.dashboard?.totalLanguage as number) || 0,
+            value: summary?.totalLanguage || 0,
             icon: Files,
             color: "text-emerald-600",
             bgColor: "bg-emerald-100 dark:bg-emerald-900/30",
