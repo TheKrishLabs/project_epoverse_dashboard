@@ -19,6 +19,10 @@ export interface DashboardSummary {
   totalEmployees: number;
   totalArticles: number;
   totalComments: number;
+  totalPendingArticles: number;
+  totalApprovedArticles: number;
+  totalLanguage: number;
+  totalCategory: number;
 }
 
 export interface DashboardResponse {
@@ -26,10 +30,8 @@ export interface DashboardResponse {
   message: string;
   dashboard: {
     summary: DashboardSummary;
-    totalCategories?: number;
     totalMenu?: number;
     totalRole?: number;
-    totalLanguage?: number;
     data?: {
       visitorStats?: VisitorStat[];
       [key: string]: unknown;
