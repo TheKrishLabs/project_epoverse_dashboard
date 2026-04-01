@@ -36,12 +36,15 @@ export interface DashboardResponse {
     };
     [key: string]: unknown;
   };
+  summary?: DashboardSummary;
 }
 
 export const dashboardService = {
   getAdminDashboard: async (): Promise<DashboardResponse | undefined> => {
     try {
-        const payload = await api.get<any>('/dashboard/admin');
+        // Using a type that allows checking for a 'data' wrapper property 
+        // while avoiding the 'any' lint error.
+        const payload = await api.get<DashboardResponse & { data?: DashboardResponse }>('/dashboard/admin');
         
         // Defensive check: If the response is wrapped in { data: ... }
         if (payload?.data && (payload?.data?.dashboard || payload?.data?.summary)) {
